@@ -1,0 +1,35 @@
+# GraphQL configuration following gqlgen starwars example pattern
+schema:
+  - schema.graphql
+
+exec:
+  filename: graphql/generated.go
+  package: graphql
+
+model:
+  filename: models/models_gen.go
+  package: models
+
+resolver:
+  layout: follow-schema
+  dir: resolver
+  package: resolver
+  filename_template: "{name}.resolvers.go"
+
+# Configure models following starwars pattern
+models:
+  ID:
+    model:
+      - github.com/99designs/gqlgen/graphql.ID
+  String:
+    model:
+      - github.com/99designs/gqlgen/graphql.String
+  Boolean:
+    model:
+      - github.com/99designs/gqlgen/graphql.Boolean
+  Int:
+    model:
+      - github.com/99designs/gqlgen/graphql.Int
+  Float:
+    model:
+      - github.com/99designs/gqlgen/graphql.Float

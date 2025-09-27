@@ -1,0 +1,1084 @@
+# Industrial Machinery Management System
+# This GraphQL API provides comprehensive management capabilities for industrial machinery,
+# including equipment monitoring, maintenance scheduling, performance analytics, and operational control.
+
+"""
+Root query type for retrieving industrial machinery data.
+Provides access to equipment, facilities, maintenance records, and operational metrics.
+"""
+type Query {
+  """
+  Retrieve all industrial equipment in the system.
+  Returns a list of all registered machinery with their current status and specifications.
+  """
+  equipment: [Equipment!]!
+  
+  """
+  Get a specific piece of equipment by its unique identifier.
+  Returns detailed information about the equipment including specifications, status, and maintenance history.
+  """
+  equipmentById(id: ID!): Equipment
+  
+  """
+  Retrieve all manufacturing facilities in the system.
+  Returns a list of facilities with their locations, capacities, and operational status.
+  """
+  facilities: [Facility!]!
+  
+  """
+  Get a specific facility by its unique identifier.
+  Returns detailed information about the facility including equipment inventory and operational metrics.
+  """
+  facilityById(id: ID!): Facility
+  
+  """
+  Retrieve all maintenance records in the system.
+  Returns a comprehensive list of maintenance activities, both scheduled and completed.
+  """
+  maintenanceRecords: [MaintenanceRecord!]!
+  
+  """
+  Get maintenance records for a specific piece of equipment.
+  Returns the complete maintenance history for the specified equipment.
+  """
+  maintenanceRecordsByEquipment(equipmentId: ID!): [MaintenanceRecord!]!
+  
+  """
+  Retrieve all operational metrics and performance data.
+  Returns key performance indicators, efficiency metrics, and operational statistics.
+  """
+  operationalMetrics: [OperationalMetric!]!
+  
+  """
+  Get real-time status of all equipment in a specific facility.
+  Returns current operational status, alerts, and performance indicators.
+  """
+  facilityStatus(facilityId: ID!): FacilityStatus
+}
+
+"""
+Root mutation type for modifying industrial machinery data.
+Provides capabilities to add, update, and manage equipment, facilities, and maintenance operations.
+"""
+type Mutation {
+  """
+  Register a new piece of industrial equipment in the system.
+  Creates a new equipment record with specifications, location, and initial status.
+  """
+  createEquipment(input: CreateEquipmentInput!): Equipment!
+  
+  """
+  Update existing equipment information.
+  Modifies equipment specifications, status, or location information.
+  """
+  updateEquipment(id: ID!, input: UpdateEquipmentInput!): Equipment!
+  
+  """
+  Remove equipment from the system.
+  Deactivates the equipment record and removes it from active operations.
+  """
+  deleteEquipment(id: ID!): Boolean!
+  
+  """
+  Create a new manufacturing facility.
+  Establishes a new facility with location, capacity, and operational parameters.
+  """
+  createFacility(input: CreateFacilityInput!): Facility!
+  
+  """
+  Update facility information.
+  Modifies facility details, capacity, or operational parameters.
+  """
+  updateFacility(id: ID!, input: UpdateFacilityInput!): Facility!
+  
+  """
+  Remove a facility from the system.
+  Deactivates the facility and removes it from operational management.
+  """
+  deleteFacility(id: ID!): Boolean!
+  
+  """
+  Schedule a new maintenance activity.
+  Creates a maintenance record with scheduled date, type, and assigned personnel.
+  """
+  scheduleMaintenance(input: ScheduleMaintenanceInput!): MaintenanceRecord!
+  
+  """
+  Update maintenance record status.
+  Modifies maintenance status, completion details, or reschedules the activity.
+  """
+  updateMaintenanceRecord(id: ID!, input: UpdateMaintenanceRecordInput!): MaintenanceRecord!
+  
+  """
+  Complete a maintenance activity.
+  Marks a maintenance record as completed with completion details and notes.
+  """
+  completeMaintenance(id: ID!, input: CompleteMaintenanceInput!): MaintenanceRecord!
+  
+  """
+  Record operational metrics.
+  Logs performance data, efficiency measurements, and operational statistics.
+  """
+  recordOperationalMetric(input: RecordOperationalMetricInput!): OperationalMetric!
+  
+  """
+  Update equipment operational status.
+  Changes equipment status (running, stopped, maintenance, error) with optional notes.
+  """
+  updateEquipmentStatus(id: ID!, status: EquipmentStatus!, notes: String): Equipment!
+}
+
+"""
+Represents a piece of industrial equipment in the manufacturing system.
+Contains comprehensive information about machinery specifications, status, and operational data.
+"""
+type Equipment {
+  """Unique identifier for the equipment"""
+  id: ID!
+  
+  """Human-readable name of the equipment"""
+  name: String!
+  
+  """Detailed description of the equipment and its purpose"""
+  description: String!
+  
+  """Manufacturer of the equipment"""
+  manufacturer: String!
+  
+  """Model number or designation of the equipment"""
+  model: String!
+  
+  """Serial number for unique identification"""
+  serialNumber: String!
+  
+  """Type or category of equipment (e.g., CNC_MILL, CONVEYOR_BELT, ROBOTIC_ARM)"""
+  type: EquipmentType!
+  
+  """Current operational status of the equipment"""
+  status: EquipmentStatus!
+  
+  """Facility where the equipment is located"""
+  facility: Facility!
+  
+  """Specifications and technical parameters of the equipment"""
+  specifications: EquipmentSpecifications!
+  
+  """Installation date of the equipment"""
+  installedAt: String!
+  
+  """Last maintenance date"""
+  lastMaintenanceAt: String
+  
+  """Next scheduled maintenance date"""
+  nextMaintenanceAt: String
+  
+  """Current operational efficiency percentage (0-100)"""
+  efficiency: Float!
+  
+  """Total operating hours since installation"""
+  totalOperatingHours: Int!
+  
+  """Maintenance records for this equipment"""
+  maintenanceRecords: [MaintenanceRecord!]!
+  
+  """Current alerts or issues with the equipment"""
+  alerts: [EquipmentAlert!]!
+}
+
+"""
+Represents a manufacturing facility containing industrial equipment.
+Manages facility-level operations, capacity, and equipment inventory.
+"""
+type Facility {
+  """Unique identifier for the facility"""
+  id: ID!
+  
+  """Name of the manufacturing facility"""
+  name: String!
+  
+  """Physical address of the facility"""
+  address: String!
+  
+  """Geographic location coordinates"""
+  location: Location!
+  
+  """Total production capacity of the facility"""
+  capacity: Int!
+  
+  """Current utilization percentage (0-100)"""
+  utilization: Float!
+  
+  """Operational status of the facility"""
+  status: FacilityOperationalStatus!
+  
+  """Date when the facility became operational"""
+  operationalSince: String!
+  
+  """Equipment inventory in this facility"""
+  equipment: [Equipment!]!
+  
+  """Facility manager responsible for operations"""
+  manager: String!
+  
+  """Contact information for the facility"""
+  contactInfo: ContactInfo!
+}
+
+"""
+Represents a maintenance record for industrial equipment.
+Tracks maintenance activities, schedules, and completion status.
+"""
+type MaintenanceRecord {
+  """Unique identifier for the maintenance record"""
+  id: ID!
+  
+  """Equipment being maintained"""
+  equipment: Equipment!
+  
+  """Type of maintenance activity"""
+  type: MaintenanceType!
+  
+  """Priority level of the maintenance"""
+  priority: MaintenancePriority!
+  
+  """Scheduled date for the maintenance"""
+  scheduledDate: String!
+  
+  """Actual completion date (null if not completed)"""
+  completedDate: String
+  
+  """Status of the maintenance activity"""
+  status: MaintenanceStatus!
+  
+  """Description of the maintenance work to be performed"""
+  description: String!
+  
+  """Technician assigned to perform the maintenance"""
+  assignedTechnician: String!
+  
+  """Estimated duration in hours"""
+  estimatedDuration: Int!
+  
+  """Actual duration in hours (null if not completed)"""
+  actualDuration: Int
+  
+  """Parts or materials required for the maintenance"""
+  requiredParts: [String!]!
+  
+  """Cost of the maintenance activity"""
+  cost: Float
+  
+  """Notes or observations from the maintenance"""
+  notes: String
+}
+
+"""
+Represents operational metrics and performance data.
+Tracks key performance indicators and efficiency measurements.
+"""
+type OperationalMetric {
+  """Unique identifier for the metric record"""
+  id: ID!
+  
+  """Equipment this metric relates to"""
+  equipment: Equipment!
+  
+  """Type of metric being measured"""
+  metricType: MetricType!
+  
+  """Value of the metric"""
+  value: Float!
+  
+  """Unit of measurement for the metric"""
+  unit: String!
+  
+  """Date and time when the metric was recorded"""
+  recordedAt: String!
+  
+  """Target or expected value for this metric"""
+  targetValue: Float
+  
+  """Whether the metric meets the target threshold"""
+  meetsTarget: Boolean!
+  
+  """Additional context or notes about the metric"""
+  notes: String
+}
+
+"""
+Represents the current status of a manufacturing facility.
+Provides real-time operational information and alerts.
+"""
+type FacilityStatus {
+  """Facility this status relates to"""
+  facility: Facility!
+  
+  """Current operational status"""
+  status: FacilityOperationalStatus!
+  
+  """Number of equipment units currently running"""
+  equipmentRunning: Int!
+  
+  """Number of equipment units currently stopped"""
+  equipmentStopped: Int!
+  
+  """Number of equipment units in maintenance"""
+  equipmentInMaintenance: Int!
+  
+  """Number of active alerts in the facility"""
+  activeAlerts: Int!
+  
+  """Current production rate (units per hour)"""
+  productionRate: Float!
+  
+  """Overall facility efficiency percentage"""
+  efficiency: Float!
+  
+  """Last updated timestamp"""
+  lastUpdated: String!
+}
+
+"""
+Represents equipment specifications and technical parameters.
+Contains detailed technical information about machinery capabilities.
+"""
+type EquipmentSpecifications {
+  """Power consumption in kilowatts"""
+  powerConsumption: Float!
+  
+  """Maximum operating speed or capacity"""
+  maxSpeed: Float!
+  
+  """Operating temperature range in Celsius"""
+  operatingTemperature: TemperatureRange!
+  
+  """Weight of the equipment in kilograms"""
+  weight: Float!
+  
+  """Dimensions of the equipment (length x width x height)"""
+  dimensions: Dimensions!
+  
+  """Required voltage and electrical specifications"""
+  electricalSpecs: ElectricalSpecs!
+  
+  """Environmental requirements (humidity, dust, etc.)"""
+  environmentalRequirements: [String!]!
+  
+  """Safety certifications and compliance standards"""
+  certifications: [String!]!
+}
+
+"""
+Represents an alert or issue with equipment.
+Tracks equipment problems, warnings, and maintenance needs.
+"""
+type EquipmentAlert {
+  """Unique identifier for the alert"""
+  id: ID!
+  
+  """Equipment this alert relates to"""
+  equipment: Equipment!
+  
+  """Type of alert or issue"""
+  type: AlertType!
+  
+  """Severity level of the alert"""
+  severity: AlertSeverity!
+  
+  """Description of the alert or issue"""
+  description: String!
+  
+  """Date and time when the alert was generated"""
+  generatedAt: String!
+  
+  """Whether the alert has been acknowledged"""
+  acknowledged: Boolean!
+  
+  """Date when the alert was acknowledged"""
+  acknowledgedAt: String
+  
+  """Person who acknowledged the alert"""
+  acknowledgedBy: String
+  
+  """Resolution status of the alert"""
+  resolved: Boolean!
+  
+  """Date when the alert was resolved"""
+  resolvedAt: String
+}
+
+"""
+Represents geographic location coordinates.
+Used for facility and equipment location tracking.
+"""
+type Location {
+  """Latitude coordinate"""
+  latitude: Float!
+  
+  """Longitude coordinate"""
+  longitude: Float!
+  
+  """Altitude above sea level in meters"""
+  altitude: Float
+}
+
+"""
+Represents contact information for facilities.
+Contains communication details for facility management.
+"""
+type ContactInfo {
+  """Primary contact phone number"""
+  phone: String!
+  
+  """Email address for facility communications"""
+  email: String!
+  
+  """Emergency contact phone number"""
+  emergencyPhone: String
+  
+  """Facility manager contact information"""
+  managerContact: String
+}
+
+"""
+Represents temperature range specifications.
+Defines minimum and maximum operating temperatures.
+"""
+type TemperatureRange {
+  """Minimum operating temperature in Celsius"""
+  min: Float!
+  
+  """Maximum operating temperature in Celsius"""
+  max: Float!
+}
+
+"""
+Represents equipment dimensions.
+Contains length, width, and height measurements.
+"""
+type Dimensions {
+  """Length in meters"""
+  length: Float!
+  
+  """Width in meters"""
+  width: Float!
+  
+  """Height in meters"""
+  height: Float!
+}
+
+"""
+Represents electrical specifications for equipment.
+Contains voltage, current, and power requirements.
+"""
+type ElectricalSpecs {
+  """Operating voltage in volts"""
+  voltage: Float!
+  
+  """Operating current in amperes"""
+  current: Float!
+  
+  """Power factor"""
+  powerFactor: Float!
+  
+  """Frequency in hertz"""
+  frequency: Float!
+}
+
+# Enums
+
+"""
+Types of industrial equipment in the manufacturing system.
+Categorizes equipment by function and operational characteristics.
+"""
+enum EquipmentType {
+  """Computer Numerical Control milling machine"""
+  CNC_MILL
+  
+  """Computer Numerical Control lathe"""
+  CNC_LATHE
+  
+  """Conveyor belt system"""
+  CONVEYOR_BELT
+  
+  """Robotic arm or manipulator"""
+  ROBOTIC_ARM
+  
+  """Industrial robot for assembly"""
+  ASSEMBLY_ROBOT
+  
+  """Welding machine or system"""
+  WELDING_MACHINE
+  
+  """Press or stamping machine"""
+  PRESS_MACHINE
+  
+  """Quality control inspection equipment"""
+  INSPECTION_EQUIPMENT
+  
+  """Packaging machine"""
+  PACKAGING_MACHINE
+  
+  """Material handling equipment"""
+  MATERIAL_HANDLER
+  
+  """Cutting or machining center"""
+  MACHINING_CENTER
+  
+  """Grinding machine"""
+  GRINDING_MACHINE
+  
+  """Drilling machine"""
+  DRILLING_MACHINE
+  
+  """Other specialized equipment"""
+  OTHER
+}
+
+"""
+Operational status of industrial equipment.
+Indicates the current state of equipment operation.
+"""
+enum EquipmentStatus {
+  """Equipment is currently running and operational"""
+  RUNNING
+  
+  """Equipment is stopped but ready for operation"""
+  STOPPED
+  
+  """Equipment is in maintenance mode"""
+  MAINTENANCE
+  
+  """Equipment has an error or fault condition"""
+  ERROR
+  
+  """Equipment is offline or disconnected"""
+  OFFLINE
+  
+  """Equipment is in standby mode"""
+  STANDBY
+  
+  """Equipment is being set up or configured"""
+  SETUP
+}
+
+"""
+Operational status of manufacturing facilities.
+Indicates the current operational state of a facility.
+"""
+enum FacilityOperationalStatus {
+  """Facility is fully operational"""
+  OPERATIONAL
+  
+  """Facility is partially operational"""
+  PARTIAL
+  
+  """Facility is under maintenance"""
+  MAINTENANCE
+  
+  """Facility is temporarily closed"""
+  CLOSED
+  
+  """Facility is in emergency shutdown"""
+  EMERGENCY
+}
+
+"""
+Types of maintenance activities for industrial equipment.
+Categorizes different types of maintenance work.
+"""
+enum MaintenanceType {
+  """Preventive maintenance to prevent failures"""
+  PREVENTIVE
+  
+  """Corrective maintenance to fix issues"""
+  CORRECTIVE
+  
+  """Predictive maintenance based on condition monitoring"""
+  PREDICTIVE
+  
+  """Emergency maintenance for urgent repairs"""
+  EMERGENCY
+  
+  """Routine inspection and testing"""
+  INSPECTION
+  
+  """Calibration of equipment parameters"""
+  CALIBRATION
+  
+  """Cleaning and general upkeep"""
+  CLEANING
+  
+  """Replacement of worn or damaged parts"""
+  REPLACEMENT
+}
+
+"""
+Priority levels for maintenance activities.
+Indicates the urgency and importance of maintenance work.
+"""
+enum MaintenancePriority {
+  """Critical priority requiring immediate attention"""
+  CRITICAL
+  
+  """High priority requiring prompt attention"""
+  HIGH
+  
+  """Medium priority for normal scheduling"""
+  MEDIUM
+  
+  """Low priority for routine maintenance"""
+  LOW
+}
+
+"""
+Status of maintenance activities.
+Tracks the progress and completion of maintenance work.
+"""
+enum MaintenanceStatus {
+  """Maintenance is scheduled but not started"""
+  SCHEDULED
+  
+  """Maintenance is currently in progress"""
+  IN_PROGRESS
+  
+  """Maintenance has been completed"""
+  COMPLETED
+  
+  """Maintenance has been cancelled"""
+  CANCELLED
+  
+  """Maintenance is overdue"""
+  OVERDUE
+  
+  """Maintenance is on hold"""
+  ON_HOLD
+}
+
+"""
+Types of operational metrics and performance indicators.
+Categorizes different types of performance measurements.
+"""
+enum MetricType {
+  """Production output rate"""
+  PRODUCTION_RATE
+  
+  """Equipment efficiency percentage"""
+  EFFICIENCY
+  
+  """Energy consumption rate"""
+  ENERGY_CONSUMPTION
+  
+  """Quality defect rate"""
+  QUALITY_RATE
+  
+  """Equipment uptime percentage"""
+  UPTIME
+  
+  """Cycle time for operations"""
+  CYCLE_TIME
+  
+  """Throughput capacity"""
+  THROUGHPUT
+  
+  """Temperature measurements"""
+  TEMPERATURE
+  
+  """Vibration levels"""
+  VIBRATION
+  
+  """Pressure readings"""
+  PRESSURE
+}
+
+"""
+Types of equipment alerts and issues.
+Categorizes different types of equipment problems and warnings.
+"""
+enum AlertType {
+  """Temperature exceeds normal operating range"""
+  TEMPERATURE_HIGH
+  
+  """Temperature below normal operating range"""
+  TEMPERATURE_LOW
+  
+  """Vibration levels exceed threshold"""
+  VIBRATION_HIGH
+  
+  """Pressure readings outside normal range"""
+  PRESSURE_ABNORMAL
+  
+  """Power consumption exceeds expected levels"""
+  POWER_HIGH
+  
+  """Equipment stopped unexpectedly"""
+  UNEXPECTED_STOP
+  
+  """Maintenance due or overdue"""
+  MAINTENANCE_DUE
+  
+  """Safety system activation"""
+  SAFETY_ACTIVATION
+  
+  """Communication error with equipment"""
+  COMMUNICATION_ERROR
+  
+  """Sensor malfunction or failure"""
+  SENSOR_FAILURE
+  
+  """General equipment fault"""
+  EQUIPMENT_FAULT
+}
+
+"""
+Severity levels for equipment alerts.
+Indicates the urgency and impact of equipment issues.
+"""
+enum AlertSeverity {
+  """Critical severity requiring immediate action"""
+  CRITICAL
+  
+  """High severity requiring prompt attention"""
+  HIGH
+  
+  """Medium severity for normal attention"""
+  MEDIUM
+  
+  """Low severity for routine monitoring"""
+  LOW
+  
+  """Informational alert for awareness"""
+  INFO
+}
+
+# Input Types
+
+"""
+Input for creating new industrial equipment.
+Contains all necessary information to register equipment in the system.
+"""
+input CreateEquipmentInput {
+  """Name of the equipment"""
+  name: String!
+  
+  """Description of the equipment"""
+  description: String!
+  
+  """Manufacturer of the equipment"""
+  manufacturer: String!
+  
+  """Model number or designation"""
+  model: String!
+  
+  """Serial number for identification"""
+  serialNumber: String!
+  
+  """Type of equipment"""
+  type: EquipmentType!
+  
+  """ID of the facility where equipment is located"""
+  facilityId: ID!
+  
+  """Equipment specifications"""
+  specifications: EquipmentSpecificationsInput!
+  
+  """Installation date (ISO 8601 format)"""
+  installedAt: String!
+}
+
+"""
+Input for updating existing equipment.
+Allows modification of equipment information and specifications.
+"""
+input UpdateEquipmentInput {
+  """Updated name of the equipment"""
+  name: String
+  
+  """Updated description"""
+  description: String
+  
+  """Updated manufacturer information"""
+  manufacturer: String
+  
+  """Updated model information"""
+  model: String
+  
+  """Updated serial number"""
+  serialNumber: String
+  
+  """Updated equipment type"""
+  type: EquipmentType
+  
+  """Updated facility ID"""
+  facilityId: ID
+  
+  """Updated specifications"""
+  specifications: EquipmentSpecificationsInput
+  
+  """Updated installation date"""
+  installedAt: String
+}
+
+"""
+Input for creating new manufacturing facilities.
+Contains information needed to establish a new facility.
+"""
+input CreateFacilityInput {
+  """Name of the facility"""
+  name: String!
+  
+  """Physical address"""
+  address: String!
+  
+  """Geographic location"""
+  location: LocationInput!
+  
+  """Production capacity"""
+  capacity: Int!
+  
+  """Operational start date (ISO 8601 format)"""
+  operationalSince: String!
+  
+  """Facility manager name"""
+  manager: String!
+  
+  """Contact information"""
+  contactInfo: ContactInfoInput!
+}
+
+"""
+Input for updating facility information.
+Allows modification of facility details and parameters.
+"""
+input UpdateFacilityInput {
+  """Updated facility name"""
+  name: String
+  
+  """Updated address"""
+  address: String
+  
+  """Updated location"""
+  location: LocationInput
+  
+  """Updated capacity"""
+  capacity: Int
+  
+  """Updated operational date"""
+  operationalSince: String
+  
+  """Updated manager"""
+  manager: String
+  
+  """Updated contact information"""
+  contactInfo: ContactInfoInput
+}
+
+"""
+Input for scheduling maintenance activities.
+Contains information needed to create a maintenance record.
+"""
+input ScheduleMaintenanceInput {
+  """ID of equipment to be maintained"""
+  equipmentId: ID!
+  
+  """Type of maintenance"""
+  type: MaintenanceType!
+  
+  """Priority level"""
+  priority: MaintenancePriority!
+  
+  """Scheduled date (ISO 8601 format)"""
+  scheduledDate: String!
+  
+  """Description of maintenance work"""
+  description: String!
+  
+  """Assigned technician"""
+  assignedTechnician: String!
+  
+  """Estimated duration in hours"""
+  estimatedDuration: Int!
+  
+  """Required parts or materials"""
+  requiredParts: [String!]
+}
+
+"""
+Input for updating maintenance records.
+Allows modification of maintenance details and status.
+"""
+input UpdateMaintenanceRecordInput {
+  """Updated maintenance type"""
+  type: MaintenanceType
+  
+  """Updated priority"""
+  priority: MaintenancePriority
+  
+  """Updated scheduled date"""
+  scheduledDate: String
+  
+  """Updated description"""
+  description: String
+  
+  """Updated assigned technician"""
+  assignedTechnician: String
+  
+  """Updated estimated duration"""
+  estimatedDuration: Int
+  
+  """Updated required parts"""
+  requiredParts: [String!]
+  
+  """Updated status"""
+  status: MaintenanceStatus
+}
+
+"""
+Input for completing maintenance activities.
+Contains information needed to mark maintenance as completed.
+"""
+input CompleteMaintenanceInput {
+  """Actual completion date (ISO 8601 format)"""
+  completedDate: String!
+  
+  """Actual duration in hours"""
+  actualDuration: Int!
+  
+  """Actual cost of maintenance"""
+  cost: Float
+  
+  """Completion notes and observations"""
+  notes: String
+}
+
+"""
+Input for recording operational metrics.
+Contains performance data and measurements.
+"""
+input RecordOperationalMetricInput {
+  """ID of equipment this metric relates to"""
+  equipmentId: ID!
+  
+  """Type of metric being recorded"""
+  metricType: MetricType!
+  
+  """Value of the metric"""
+  value: Float!
+  
+  """Unit of measurement"""
+  unit: String!
+  
+  """Target or expected value"""
+  targetValue: Float
+  
+  """Additional notes or context"""
+  notes: String
+}
+
+"""
+Input for equipment specifications.
+Contains technical parameters and capabilities.
+"""
+input EquipmentSpecificationsInput {
+  """Power consumption in kilowatts"""
+  powerConsumption: Float!
+  
+  """Maximum operating speed or capacity"""
+  maxSpeed: Float!
+  
+  """Operating temperature range"""
+  operatingTemperature: TemperatureRangeInput!
+  
+  """Weight in kilograms"""
+  weight: Float!
+  
+  """Equipment dimensions"""
+  dimensions: DimensionsInput!
+  
+  """Electrical specifications"""
+  electricalSpecs: ElectricalSpecsInput!
+  
+  """Environmental requirements"""
+  environmentalRequirements: [String!]!
+  
+  """Safety certifications"""
+  certifications: [String!]!
+}
+
+"""
+Input for geographic location.
+Contains latitude, longitude, and optional altitude.
+"""
+input LocationInput {
+  """Latitude coordinate"""
+  latitude: Float!
+  
+  """Longitude coordinate"""
+  longitude: Float!
+  
+  """Altitude above sea level in meters"""
+  altitude: Float
+}
+
+"""
+Input for contact information.
+Contains communication details for facilities.
+"""
+input ContactInfoInput {
+  """Primary contact phone number"""
+  phone: String!
+  
+  """Email address"""
+  email: String!
+  
+  """Emergency contact phone number"""
+  emergencyPhone: String
+  
+  """Facility manager contact"""
+  managerContact: String
+}
+
+"""
+Input for temperature range.
+Defines minimum and maximum operating temperatures.
+"""
+input TemperatureRangeInput {
+  """Minimum temperature in Celsius"""
+  min: Float!
+  
+  """Maximum temperature in Celsius"""
+  max: Float!
+}
+
+"""
+Input for equipment dimensions.
+Contains length, width, and height measurements.
+"""
+input DimensionsInput {
+  """Length in meters"""
+  length: Float!
+  
+  """Width in meters"""
+  width: Float!
+  
+  """Height in meters"""
+  height: Float!
+}
+
+"""
+Input for electrical specifications.
+Contains voltage, current, and power requirements.
+"""
+input ElectricalSpecsInput {
+  """Operating voltage in volts"""
+  voltage: Float!
+  
+  """Operating current in amperes"""
+  current: Float!
+  
+  """Power factor"""
+  powerFactor: Float!
+  
+  """Frequency in hertz"""
+  frequency: Float!
+}
