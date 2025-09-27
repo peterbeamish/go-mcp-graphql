@@ -160,7 +160,11 @@ func StartHTTPServer(server *MCPGraphQLServer, addr string) error {
 	mux.HandleFunc("/schema", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		schema := server.GetSchema()
-		json.NewEncoder(w).Encode(schema)
+		response := map[string]interface{}{
+			"schema": schema,
+			"sdl":    schema.GetSchemaSDL(),
+		}
+		json.NewEncoder(w).Encode(response)
 	})
 
 	// Add a tools endpoint to list available MCP tools

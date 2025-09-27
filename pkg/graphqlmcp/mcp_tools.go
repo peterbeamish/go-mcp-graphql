@@ -7,12 +7,13 @@ import (
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/peterbeamish/go-mcp-graphql/pkg/graphqlmcp/schema"
 )
 
 // MCPGraphQLServer represents an MCP server that provides GraphQL tools
 type MCPGraphQLServer struct {
 	client    *GraphQLClient
-	schema    *Schema
+	schema    *schema.Schema
 	mcpServer *mcp.Server
 }
 
@@ -26,6 +27,8 @@ func NewMCPGraphQLServer(endpoint string) (*MCPGraphQLServer, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to introspect GraphQL schema: %w", err)
 	}
+
+	// Schema is already parsed from introspection, no need to re-parse from SDL
 
 	// Create MCP server
 	mcpServer := mcp.NewServer(&mcp.Implementation{
@@ -69,7 +72,7 @@ func (s *MCPGraphQLServer) addGraphQLTools() error {
 }
 
 // addQueryTool adds an MCP tool for a GraphQL query
-func (s *MCPGraphQLServer) addQueryTool(query *Field) error {
+func (s *MCPGraphQLServer) addQueryTool(query *schema.Field) error {
 	toolName := "query_" + query.Name
 	toolDescription := query.Description
 	if toolDescription == "" {
@@ -96,7 +99,7 @@ func (s *MCPGraphQLServer) addQueryTool(query *Field) error {
 }
 
 // addMutationTool adds an MCP tool for a GraphQL mutation
-func (s *MCPGraphQLServer) addMutationTool(mutation *Field) error {
+func (s *MCPGraphQLServer) addMutationTool(mutation *schema.Field) error {
 	toolName := "mutation_" + mutation.Name
 	toolDescription := mutation.Description
 	if toolDescription == "" {
@@ -123,7 +126,7 @@ func (s *MCPGraphQLServer) addMutationTool(mutation *Field) error {
 }
 
 // createInputSchema creates a JSON schema for the tool input
-func (s *MCPGraphQLServer) createInputSchema(field *Field) map[string]interface{} {
+func (s *MCPGraphQLServer) createInputSchema(field *schema.Field) map[string]interface{} {
 	properties := make(map[string]interface{})
 	required := []string{}
 
@@ -151,7 +154,7 @@ func (s *MCPGraphQLServer) createInputSchema(field *Field) map[string]interface{
 }
 
 // createArgumentSchema creates a JSON schema for a GraphQL argument
-func (s *MCPGraphQLServer) createArgumentSchema(arg *Argument) map[string]interface{} {
+func (s *MCPGraphQLServer) createArgumentSchema(arg *schema.Argument) map[string]interface{} {
 	schema := map[string]interface{}{
 		"type": arg.Type.ToJSONSchemaType(),
 	}
@@ -176,13 +179,20 @@ func (s *MCPGraphQLServer) createArgumentSchema(arg *Argument) map[string]interf
 }
 
 // executeGraphQLOperation executes a GraphQL query or mutation
-func (s *MCPGraphQLServer) executeGraphQLOperation(ctx context.Context, field *Field, input map[string]interface{}, operationType string) (*mcp.CallToolResult, error) {
+func (s *MCPGraphQLServer) executeGraphQLOperation(ctx context.Context, field *schema.Field, input map[string]interface{}, operationType string) (*mcp.CallToolResult, error) {
 	// Generate the GraphQL query/mutation string
 	var queryString string
+	var err error
 	if operationType == "query" {
-		queryString = field.GenerateQueryString()
+		queryString, err = field.GenerateQueryStringWithSchema(s.schema)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate query string: %w", err)
+		}
 	} else {
-		queryString = field.GenerateMutationString()
+		queryString, err = field.GenerateMutationStringWithSchema(s.schema)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate mutation string: %w", err)
+		}
 	}
 
 	// Execute the GraphQL operation
@@ -269,7 +279,7 @@ func (s *MCPGraphQLServer) RefreshSchema() error {
 }
 
 // GetSchema returns the current GraphQL schema
-func (s *MCPGraphQLServer) GetSchema() *Schema {
+func (s *MCPGraphQLServer) GetSchema() *schema.Schema {
 	return s.schema
 }
 

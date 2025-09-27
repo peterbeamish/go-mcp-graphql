@@ -6,15 +6,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"time"
+
+	"github.com/peterbeamish/go-mcp-graphql/pkg/graphqlmcp/schema"
 )
 
 // GraphQLClient handles introspection and queries to a GraphQL server
 type GraphQLClient struct {
-	endpoint    string
-	httpClient  *http.Client
-	headers     map[string]string
+	endpoint   string
+	httpClient *http.Client
+	headers    map[string]string
 }
 
 // NewGraphQLClient creates a new GraphQL client
@@ -62,6 +65,14 @@ query IntrospectionQuery {
           ofType {
             name
             kind
+            ofType {
+              name
+              kind
+              ofType {
+                name
+                kind
+              }
+            }
           }
         }
         args {
@@ -89,6 +100,14 @@ query IntrospectionQuery {
           ofType {
             name
             kind
+            ofType {
+              name
+              kind
+              ofType {
+                name
+                kind
+              }
+            }
           }
         }
         args {
@@ -118,6 +137,14 @@ query IntrospectionQuery {
           ofType {
             name
             kind
+            ofType {
+              name
+              kind
+              ofType {
+                name
+                kind
+              }
+            }
           }
         }
         args {
@@ -139,7 +166,7 @@ query IntrospectionQuery {
 `
 
 // IntrospectSchema performs GraphQL introspection to get the schema
-func (c *GraphQLClient) IntrospectSchema(ctx context.Context) (*Schema, error) {
+func (c *GraphQLClient) IntrospectSchema(ctx context.Context) (*schema.Schema, error) {
 	req := &GraphQLRequest{
 		Query: IntrospectionQuery,
 	}
@@ -159,7 +186,7 @@ func (c *GraphQLClient) IntrospectSchema(ctx context.Context) (*Schema, error) {
 		return nil, fmt.Errorf("invalid introspection response format")
 	}
 
-	schema, err := parseIntrospectionResponse(schemaData)
+	schema, err := schema.ParseIntrospectionResponse(schemaData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse introspection response: %w", err)
 	}
@@ -183,6 +210,8 @@ func (c *GraphQLClient) executeRequest(ctx context.Context, req *GraphQLRequest)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
+
+	log.Printf("Executing request: %s", string(jsonData))
 
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", c.endpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
