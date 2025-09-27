@@ -55,7 +55,7 @@ func convertTypeFromAST(astType *ast.Type) *TypeRef {
 
 	if astType.NamedType != "" {
 		typ.Name = astType.NamedType
-		typ.Kind = "SCALAR" // Default, will be overridden by actual type lookup
+		// Don't set a default kind here - let the actual type lookup determine it
 	}
 
 	if astType.NonNull {

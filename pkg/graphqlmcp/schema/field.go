@@ -15,11 +15,8 @@ func (f *Field) GenerateQueryStringWithSchema(schema *Schema) (string, error) {
 
 	var query strings.Builder
 
-	// Start with the query keyword
-	query.WriteString("query {\n  ")
-	query.WriteString(f.Name)
-
-	// Add arguments
+	// Start with the query keyword and variable declarations
+	query.WriteString("query")
 	if len(f.Args) > 0 {
 		query.WriteString("(")
 		for i, arg := range f.Args {
@@ -30,6 +27,25 @@ func (f *Field) GenerateQueryStringWithSchema(schema *Schema) (string, error) {
 			query.WriteString(arg.Name)
 			query.WriteString(": ")
 			query.WriteString(arg.Type.GetTypeName())
+			if arg.Type.IsNonNull() {
+				query.WriteString("!")
+			}
+		}
+		query.WriteString(")")
+	}
+	query.WriteString(" {\n  ")
+	query.WriteString(f.Name)
+
+	// Add field arguments (using variables)
+	if len(f.Args) > 0 {
+		query.WriteString("(")
+		for i, arg := range f.Args {
+			if i > 0 {
+				query.WriteString(", ")
+			}
+			query.WriteString(arg.Name)
+			query.WriteString(": $")
+			query.WriteString(arg.Name)
 		}
 		query.WriteString(")")
 	}
@@ -131,10 +147,16 @@ func (f *Field) generateSelectionSetForTypeWithVisited(typeDef *ast.Definition, 
 		// For objects and interfaces, select their fields
 		for _, field := range typeDef.Fields {
 			if f.shouldIncludeField(field) {
-				// Skip fields that return the same type as the original query to avoid self-referencing
+				// Skip fields that return the same type as the current type being processed to avoid self-referencing
+				// This prevents infinite recursion while allowing legitimate cross-references
 				fieldTypeName := f.getTypeNameFromAST(field.Type)
-				if fieldTypeName == originalType {
+				if fieldTypeName == typeDef.Name {
 					continue // Skip this field to avoid self-referencing
+				}
+
+				// Skip fields that would create a circular reference based on the visited map
+				if visited[fieldTypeName] {
+					continue // Skip this field to avoid circular reference
 				}
 
 				fieldSelection, err := f.generateFieldSelectionWithVisited(field, schema, depth+1, visited, originalType)
@@ -207,8 +229,8 @@ func (f *Field) shouldIncludeField(field *ast.FieldDefinition) bool {
 
 // generateFieldSelectionWithVisited generates a selection for a specific field with circular reference protection
 func (f *Field) generateFieldSelectionWithVisited(field *ast.FieldDefinition, schema *Schema, depth int, visited map[string]bool, originalType string) (string, error) {
-	// Check if this is a scalar type
-	if f.isScalarType(field.Type) {
+	// Check if this is a scalar type using the schema
+	if f.isScalarTypeWithSchema(field.Type, schema) {
 		return field.Name, nil
 	}
 
@@ -232,7 +254,7 @@ func (f *Field) generateFieldSelectionWithVisited(field *ast.FieldDefinition, sc
 		return field.Name, nil
 	}
 
-	return fmt.Sprintf("%s {\n      %s\n    }", field.Name, nestedSelection), nil
+	return fmt.Sprintf("%s {\n      %s\n    }", field.Name, strings.ReplaceAll(nestedSelection, "\n    ", "\n      ")), nil
 }
 
 // isScalarType checks if a type is a scalar
@@ -253,6 +275,40 @@ func (f *Field) isScalarType(astType *ast.Type) bool {
 				"ID":      true,
 			}
 			return scalarTypes[currentType.NamedType]
+		}
+		currentType = currentType.Elem
+	}
+	return false
+}
+
+// isScalarTypeWithSchema checks if a type is a scalar using the schema's type registry
+func (f *Field) isScalarTypeWithSchema(astType *ast.Type, schema *Schema) bool {
+	if astType == nil || schema == nil || schema.typeRegistry == nil {
+		return false
+	}
+
+	// Unwrap non-null and list wrappers
+	currentType := astType
+	for currentType != nil {
+		if currentType.NamedType != "" {
+			// Check if it's a built-in scalar type
+			scalarTypes := map[string]bool{
+				"String":  true,
+				"Int":     true,
+				"Float":   true,
+				"Boolean": true,
+				"ID":      true,
+			}
+			if scalarTypes[currentType.NamedType] {
+				return true
+			}
+
+			// Check the type registry to see if it's defined as a scalar
+			if typeDef := schema.GetTypeDefinition(currentType.NamedType); typeDef != nil {
+				return typeDef.Kind == ast.Scalar
+			}
+
+			return false
 		}
 		currentType = currentType.Elem
 	}
