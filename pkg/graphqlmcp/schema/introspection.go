@@ -87,7 +87,7 @@ func parseTypeToAST(data map[string]interface{}) (*ast.Definition, error) {
 		Description: getString(data, "description"),
 	}
 
-	// Parse fields
+	// Parse fields (for objects, interfaces, etc.)
 	if fieldsData, ok := data["fields"].([]interface{}); ok {
 		astDef.Fields = make([]*ast.FieldDefinition, 0, len(fieldsData))
 		for _, fieldData := range fieldsData {
@@ -97,6 +97,22 @@ func parseTypeToAST(data map[string]interface{}) (*ast.Definition, error) {
 					return nil, fmt.Errorf("failed to parse field: %w", err)
 				}
 				astDef.Fields = append(astDef.Fields, field)
+			}
+		}
+	}
+
+	// Parse input fields (for input objects)
+	if inputFieldsData, ok := data["inputFields"].([]interface{}); ok && len(inputFieldsData) > 0 {
+		astDef.Fields = make([]*ast.FieldDefinition, 0, len(inputFieldsData))
+		for _, inputFieldData := range inputFieldsData {
+			if inputFieldMap, ok := inputFieldData.(map[string]interface{}); ok {
+				// Input fields are parsed the same way as regular fields
+				// but they don't have arguments, so we use parseInputFieldToAST
+				inputField, err := parseInputFieldToAST(inputFieldMap)
+				if err != nil {
+					return nil, fmt.Errorf("failed to parse input field: %w", err)
+				}
+				astDef.Fields = append(astDef.Fields, inputField)
 			}
 		}
 	}
@@ -174,6 +190,39 @@ func parseFieldToAST(data map[string]interface{}) (*ast.FieldDefinition, error) 
 				}
 				field.Arguments = append(field.Arguments, arg)
 			}
+		}
+	}
+
+	return field, nil
+}
+
+// parseInputFieldToAST converts input field introspection data to gqlparser AST FieldDefinition
+func parseInputFieldToAST(data map[string]interface{}) (*ast.FieldDefinition, error) {
+	name, ok := data["name"].(string)
+	if !ok {
+		return nil, fmt.Errorf("input field missing name")
+	}
+
+	field := &ast.FieldDefinition{
+		Name:        name,
+		Description: getString(data, "description"),
+		// Input fields don't have arguments, so Arguments is left as nil
+	}
+
+	// Parse type
+	if typeData, ok := data["type"].(map[string]interface{}); ok {
+		fieldType, err := parseTypeRefToAST(typeData)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse input field type: %w", err)
+		}
+		field.Type = fieldType
+	}
+
+	// Parse default value
+	if defaultValue, ok := data["defaultValue"]; ok && defaultValue != nil {
+		field.DefaultValue = &ast.Value{
+			Kind: ast.StringValue,
+			Raw:  fmt.Sprintf("%v", defaultValue),
 		}
 	}
 

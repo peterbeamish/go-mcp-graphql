@@ -61,9 +61,11 @@ func convertTypeFromAST(astType *ast.Type) *TypeRef {
 	if astType.NonNull {
 		typ.Kind = "NON_NULL"
 		typ.OfType = convertTypeFromAST(astType.Elem)
+		// For NON_NULL types, don't set the name - it should only be on the innermost type
 	} else if astType.Elem != nil {
 		typ.Kind = "LIST"
 		typ.OfType = convertTypeFromAST(astType.Elem)
+		// For LIST types, don't set the name - it should only be on the innermost type
 	}
 
 	return typ

@@ -47,11 +47,7 @@ func (tr *TypeRef) IsNonNull() bool {
 		return true
 	}
 
-	// Check if wrapped in list
-	if tr.Kind == "LIST" && tr.OfType != nil {
-		return tr.OfType.IsNonNull()
-	}
-
+	// For other types (including LIST), they are nullable unless wrapped in NON_NULL
 	return false
 }
 

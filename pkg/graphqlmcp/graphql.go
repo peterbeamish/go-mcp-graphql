@@ -160,6 +160,27 @@ query IntrospectionQuery {
           defaultValue
         }
       }
+      inputFields {
+        name
+        description
+        type {
+          name
+          kind
+          ofType {
+            name
+            kind
+            ofType {
+              name
+              kind
+              ofType {
+                name
+                kind
+              }
+            }
+          }
+        }
+        defaultValue
+      }
     }
   }
 }
