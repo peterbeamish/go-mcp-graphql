@@ -394,7 +394,7 @@ func containsSubstring(s, substr string) bool {
 	return false
 }
 
-func TestField_GenerateInterfaceQueryString_Personnel(t *testing.T) {
+func TestField_GenerateQueryStringWithSchema_Personnel(t *testing.T) {
 	// Create a schema with Personnel interface
 	// Use the same definitions for both parsedSchema and typeRegistry
 	personnelDef := &ast.Definition{

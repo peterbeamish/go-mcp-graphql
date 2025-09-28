@@ -227,7 +227,7 @@ func TestSchema_GetInterfaceFields(t *testing.T) {
 	}
 }
 
-func TestField_GenerateInterfaceQueryString(t *testing.T) {
+func TestField_GenerateQueryStringWithSchema_Interface(t *testing.T) {
 	// Create a test schema with interface and implementations
 	schema := &Schema{
 		parsedSchema: &ast.Schema{
@@ -314,9 +314,9 @@ func TestField_GenerateInterfaceQueryString(t *testing.T) {
 		ASTType: ast.NamedType("Personnel", nil),
 	}
 
-	result, err := field.GenerateInterfaceQueryString(schema)
+	result, err := field.GenerateQueryStringWithSchema(schema)
 	if err != nil {
-		t.Fatalf("GenerateInterfaceQueryString() unexpected error: %v", err)
+		t.Fatalf("GenerateQueryStringWithSchema() unexpected error: %v", err)
 	}
 
 	// Check that the result contains interface fields
@@ -354,7 +354,7 @@ func TestField_GenerateInterfaceQueryString(t *testing.T) {
 	t.Logf("Generated interface query:\n%s", result)
 }
 
-func TestField_GenerateInterfaceQueryString_NonInterface(t *testing.T) {
+func TestField_GenerateQueryStringWithSchema_NonInterface(t *testing.T) {
 	// Create a test schema with a regular object type
 	schema := &Schema{
 		parsedSchema: &ast.Schema{
@@ -391,9 +391,9 @@ func TestField_GenerateInterfaceQueryString_NonInterface(t *testing.T) {
 		ASTType: ast.NamedType("User", nil),
 	}
 
-	result, err := field.GenerateInterfaceQueryString(schema)
+	result, err := field.GenerateQueryStringWithSchema(schema)
 	if err != nil {
-		t.Fatalf("GenerateInterfaceQueryString() unexpected error: %v", err)
+		t.Fatalf("GenerateQueryStringWithSchema() unexpected error: %v", err)
 	}
 
 	// Should fall back to regular query generation
