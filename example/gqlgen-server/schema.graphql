@@ -54,6 +54,12 @@ type Query {
   Returns current operational status, alerts, and performance indicators.
   """
   facilityStatus(facilityId: ID!): FacilityStatus
+  
+  """
+  Retrieve all personnel across all facilities.
+  Returns a comprehensive list of all personnel (managers and associates) in the system.
+  """
+  personnel: [Personnel!]!
 }
 
 """
@@ -126,6 +132,24 @@ type Mutation {
   Changes equipment status (running, stopped, maintenance, error) with optional notes.
   """
   updateEquipmentStatus(id: ID!, status: EquipmentStatus!, notes: String): Equipment!
+  
+  """
+  Add a manager to a facility.
+  Creates a new manager and assigns them to the specified facility.
+  """
+  addManagerToFacility(facilityId: ID!, input: AddManagerInput!): Manager!
+  
+  """
+  Add an associate to a facility.
+  Creates a new associate and assigns them to the specified facility.
+  """
+  addAssociateToFacility(facilityId: ID!, input: AddAssociateInput!): Associate!
+  
+  """
+  Remove personnel from a facility.
+  Removes the specified personnel from the facility.
+  """
+  removePersonnelFromFacility(facilityId: ID!, personnelId: ID!): Boolean!
 }
 
 """
@@ -222,6 +246,99 @@ type Facility {
   
   """Contact information for the facility"""
   contactInfo: ContactInfo!
+  
+  """Personnel working at this facility"""
+  personnel: [Personnel!]!
+}
+
+"""
+Represents personnel working at a facility.
+Interface for different types of facility personnel.
+"""
+interface Personnel {
+  """Unique identifier for the personnel"""
+  id: ID!
+  
+  """Full name of the personnel"""
+  name: String!
+  
+  """Email address for communication"""
+  email: String!
+  
+  """Phone number for contact"""
+  phone: String!
+  
+  """Date when the personnel joined the facility"""
+  joinedAt: String!
+  
+  """Current employment status"""
+  status: PersonnelStatus!
+}
+
+"""
+Represents a manager at a facility.
+Manages operations and oversees other personnel.
+"""
+type Manager implements Personnel {
+  """Unique identifier for the manager"""
+  id: ID!
+  
+  """Full name of the manager"""
+  name: String!
+  
+  """Email address for communication"""
+  email: String!
+  
+  """Phone number for contact"""
+  phone: String!
+  
+  """Date when the manager joined the facility"""
+  joinedAt: String!
+  
+  """Current employment status"""
+  status: PersonnelStatus!
+  
+  """Department or area of responsibility"""
+  department: String!
+  
+  """Number of direct reports"""
+  directReports: Int!
+  
+  """Management level (1-5, where 5 is highest)"""
+  level: Int!
+}
+
+"""
+Represents an associate at a facility.
+Performs operational tasks and reports to managers.
+"""
+type Associate implements Personnel {
+  """Unique identifier for the associate"""
+  id: ID!
+  
+  """Full name of the associate"""
+  name: String!
+  
+  """Email address for communication"""
+  email: String!
+  
+  """Phone number for contact"""
+  phone: String!
+  
+  """Date when the associate joined the facility"""
+  joinedAt: String!
+  
+  """Current employment status"""
+  status: PersonnelStatus!
+  
+  """Job title or role"""
+  jobTitle: String!
+  
+  """Department or work area"""
+  department: String!
+  
+  """Manager this associate reports to"""
+  reportsTo: Manager
 }
 
 """
@@ -751,6 +868,27 @@ enum AlertSeverity {
   INFO
 }
 
+"""
+Employment status of facility personnel.
+Indicates the current employment state of personnel.
+"""
+enum PersonnelStatus {
+  """Personnel is actively employed"""
+  ACTIVE
+  
+  """Personnel is on leave"""
+  ON_LEAVE
+  
+  """Personnel is temporarily suspended"""
+  SUSPENDED
+  
+  """Personnel has resigned"""
+  RESIGNED
+  
+  """Personnel has been terminated"""
+  TERMINATED
+}
+
 # Input Types
 
 """
@@ -1081,4 +1219,55 @@ input ElectricalSpecsInput {
   
   """Frequency in hertz"""
   frequency: Float!
+}
+
+"""
+Input for adding a manager to a facility.
+Contains information needed to create and assign a manager.
+"""
+input AddManagerInput {
+  """Full name of the manager"""
+  name: String!
+  
+  """Email address for communication"""
+  email: String!
+  
+  """Phone number for contact"""
+  phone: String!
+  
+  """Department or area of responsibility"""
+  department: String!
+  
+  """Management level (1-5, where 5 is highest)"""
+  level: Int!
+  
+  """Date when the manager joined (ISO 8601 format)"""
+  joinedAt: String!
+}
+
+"""
+Input for adding an associate to a facility.
+Contains information needed to create and assign an associate.
+"""
+input AddAssociateInput {
+  """Full name of the associate"""
+  name: String!
+  
+  """Email address for communication"""
+  email: String!
+  
+  """Phone number for contact"""
+  phone: String!
+  
+  """Job title or role"""
+  jobTitle: String!
+  
+  """Department or work area"""
+  department: String!
+  
+  """ID of the manager this associate reports to"""
+  reportsToId: ID
+  
+  """Date when the associate joined (ISO 8601 format)"""
+  joinedAt: String!
 }

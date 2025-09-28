@@ -13,9 +13,11 @@ func convertASTToType(astDef *ast.Definition) *Type {
 	}
 
 	typ := &Type{
-		Name:        astDef.Name,
-		Kind:        convertKindFromAST(astDef.Kind),
-		Description: astDef.Description,
+		Name:          astDef.Name,
+		Kind:          convertKindFromAST(astDef.Kind),
+		Description:   astDef.Description,
+		Interfaces:    astDef.Interfaces,
+		PossibleTypes: astDef.Types,
 	}
 
 	// Convert fields

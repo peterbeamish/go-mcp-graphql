@@ -493,6 +493,343 @@ func TestParseIntrospectionResponse_ComplexInputTypes(t *testing.T) {
 	}
 }
 
+func TestParseIntrospectionResponse_WithInterfaces(t *testing.T) {
+	// Test parsing introspection response with interfaces
+	input := map[string]interface{}{
+		"__schema": map[string]interface{}{
+			"queryType": map[string]interface{}{
+				"name": "Query",
+			},
+			"mutationType": map[string]interface{}{
+				"name": "Mutation",
+			},
+			"types": []interface{}{
+				// Personnel interface
+				map[string]interface{}{
+					"name":        "Personnel",
+					"kind":        "INTERFACE",
+					"description": "Represents personnel working at a facility",
+					"fields": []interface{}{
+						map[string]interface{}{
+							"name":        "id",
+							"description": "Unique identifier for the personnel",
+							"type": map[string]interface{}{
+								"kind": "NON_NULL",
+								"ofType": map[string]interface{}{
+									"name": "ID",
+									"kind": "SCALAR",
+								},
+							},
+						},
+						map[string]interface{}{
+							"name":        "name",
+							"description": "Full name of the personnel",
+							"type": map[string]interface{}{
+								"kind": "NON_NULL",
+								"ofType": map[string]interface{}{
+									"name": "String",
+									"kind": "SCALAR",
+								},
+							},
+						},
+						map[string]interface{}{
+							"name":        "email",
+							"description": "Email address for communication",
+							"type": map[string]interface{}{
+								"kind": "NON_NULL",
+								"ofType": map[string]interface{}{
+									"name": "String",
+									"kind": "SCALAR",
+								},
+							},
+						},
+					},
+					"possibleTypes": []interface{}{
+						map[string]interface{}{
+							"name": "Manager",
+							"kind": "OBJECT",
+						},
+						map[string]interface{}{
+							"name": "Associate",
+							"kind": "OBJECT",
+						},
+					},
+				},
+				// Manager type implementing Personnel
+				map[string]interface{}{
+					"name":        "Manager",
+					"kind":        "OBJECT",
+					"description": "Represents a manager at a facility",
+					"interfaces": []interface{}{
+						map[string]interface{}{
+							"name": "Personnel",
+							"kind": "INTERFACE",
+						},
+					},
+					"fields": []interface{}{
+						map[string]interface{}{
+							"name":        "id",
+							"description": "Unique identifier for the manager",
+							"type": map[string]interface{}{
+								"kind": "NON_NULL",
+								"ofType": map[string]interface{}{
+									"name": "ID",
+									"kind": "SCALAR",
+								},
+							},
+						},
+						map[string]interface{}{
+							"name":        "name",
+							"description": "Full name of the manager",
+							"type": map[string]interface{}{
+								"kind": "NON_NULL",
+								"ofType": map[string]interface{}{
+									"name": "String",
+									"kind": "SCALAR",
+								},
+							},
+						},
+						map[string]interface{}{
+							"name":        "email",
+							"description": "Email address for communication",
+							"type": map[string]interface{}{
+								"kind": "NON_NULL",
+								"ofType": map[string]interface{}{
+									"name": "String",
+									"kind": "SCALAR",
+								},
+							},
+						},
+						map[string]interface{}{
+							"name":        "department",
+							"description": "Department or area of responsibility",
+							"type": map[string]interface{}{
+								"kind": "NON_NULL",
+								"ofType": map[string]interface{}{
+									"name": "String",
+									"kind": "SCALAR",
+								},
+							},
+						},
+						map[string]interface{}{
+							"name":        "level",
+							"description": "Management level (1-5, where 5 is highest)",
+							"type": map[string]interface{}{
+								"kind": "NON_NULL",
+								"ofType": map[string]interface{}{
+									"name": "Int",
+									"kind": "SCALAR",
+								},
+							},
+						},
+					},
+				},
+				// Associate type implementing Personnel
+				map[string]interface{}{
+					"name":        "Associate",
+					"kind":        "OBJECT",
+					"description": "Represents an associate at a facility",
+					"interfaces": []interface{}{
+						map[string]interface{}{
+							"name": "Personnel",
+							"kind": "INTERFACE",
+						},
+					},
+					"fields": []interface{}{
+						map[string]interface{}{
+							"name":        "id",
+							"description": "Unique identifier for the associate",
+							"type": map[string]interface{}{
+								"kind": "NON_NULL",
+								"ofType": map[string]interface{}{
+									"name": "ID",
+									"kind": "SCALAR",
+								},
+							},
+						},
+						map[string]interface{}{
+							"name":        "name",
+							"description": "Full name of the associate",
+							"type": map[string]interface{}{
+								"kind": "NON_NULL",
+								"ofType": map[string]interface{}{
+									"name": "String",
+									"kind": "SCALAR",
+								},
+							},
+						},
+						map[string]interface{}{
+							"name":        "email",
+							"description": "Email address for communication",
+							"type": map[string]interface{}{
+								"kind": "NON_NULL",
+								"ofType": map[string]interface{}{
+									"name": "String",
+									"kind": "SCALAR",
+								},
+							},
+						},
+						map[string]interface{}{
+							"name":        "jobTitle",
+							"description": "Job title or role",
+							"type": map[string]interface{}{
+								"kind": "NON_NULL",
+								"ofType": map[string]interface{}{
+									"name": "String",
+									"kind": "SCALAR",
+								},
+							},
+						},
+						map[string]interface{}{
+							"name":        "reportsTo",
+							"description": "Manager this associate reports to",
+							"type": map[string]interface{}{
+								"name": "Manager",
+								"kind": "OBJECT",
+							},
+						},
+					},
+				},
+				// Scalar types
+				map[string]interface{}{
+					"name":        "String",
+					"kind":        "SCALAR",
+					"description": "String scalar type",
+				},
+				map[string]interface{}{
+					"name":        "Int",
+					"kind":        "SCALAR",
+					"description": "Int scalar type",
+				},
+				map[string]interface{}{
+					"name":        "ID",
+					"kind":        "SCALAR",
+					"description": "ID scalar type",
+				},
+			},
+		},
+	}
+
+	result, err := ParseIntrospectionResponse(input)
+	if err != nil {
+		t.Fatalf("ParseIntrospectionResponse() unexpected error: %v", err)
+	}
+
+	if result == nil {
+		t.Fatal("ParseIntrospectionResponse() returned nil result")
+	}
+
+	// Check that we have the expected types
+	if len(result.Types) == 0 {
+		t.Fatal("Expected types but got none")
+	}
+
+	// Check for Personnel interface
+	var personnelInterface *Type
+	for _, typ := range result.Types {
+		if typ.Name == "Personnel" {
+			personnelInterface = typ
+			break
+		}
+	}
+
+	if personnelInterface == nil {
+		t.Fatal("Expected Personnel interface but not found")
+	}
+
+	if personnelInterface.Kind != "INTERFACE" {
+		t.Errorf("Expected Personnel to be INTERFACE but got %s", personnelInterface.Kind)
+	}
+
+	if len(personnelInterface.Fields) != 3 {
+		t.Errorf("Expected Personnel to have 3 fields but got %d", len(personnelInterface.Fields))
+	}
+
+	// Check interface fields
+	fieldMap := make(map[string]*Field)
+	for _, field := range personnelInterface.Fields {
+		fieldMap[field.Name] = field
+	}
+
+	expectedFields := []string{"id", "name", "email"}
+	for _, expectedField := range expectedFields {
+		if field, exists := fieldMap[expectedField]; !exists {
+			t.Errorf("Expected Personnel field %s not found", expectedField)
+		} else if !field.Type.IsNonNull() {
+			t.Errorf("Expected Personnel field %s to be non-null", expectedField)
+		}
+	}
+
+	// Check that Manager implements Personnel
+	var managerType *Type
+	for _, typ := range result.Types {
+		if typ.Name == "Manager" {
+			managerType = typ
+			break
+		}
+	}
+
+	if managerType == nil {
+		t.Fatal("Expected Manager type but not found")
+	}
+
+	if len(managerType.Interfaces) != 1 || managerType.Interfaces[0] != "Personnel" {
+		t.Errorf("Expected Manager to implement Personnel interface, got %v", managerType.Interfaces)
+	}
+
+	// Check that Associate implements Personnel
+	var associateType *Type
+	for _, typ := range result.Types {
+		if typ.Name == "Associate" {
+			associateType = typ
+			break
+		}
+	}
+
+	if associateType == nil {
+		t.Fatal("Expected Associate type but not found")
+	}
+
+	if len(associateType.Interfaces) != 1 || associateType.Interfaces[0] != "Personnel" {
+		t.Errorf("Expected Associate to implement Personnel interface, got %v", associateType.Interfaces)
+	}
+
+	// Test interface-specific methods
+	interfaces := result.GetInterfaces()
+	if len(interfaces) != 1 {
+		t.Errorf("Expected 1 interface but got %d", len(interfaces))
+	}
+
+	implementations := result.GetImplementations("Personnel")
+	if len(implementations) != 2 {
+		t.Errorf("Expected 2 implementations of Personnel but got %d", len(implementations))
+	}
+
+	implementationNames := make(map[string]bool)
+	for _, impl := range implementations {
+		implementationNames[impl.Name] = true
+	}
+
+	if !implementationNames["Manager"] {
+		t.Error("Expected Manager to be an implementation of Personnel")
+	}
+	if !implementationNames["Associate"] {
+		t.Error("Expected Associate to be an implementation of Personnel")
+	}
+
+	// Test interface fields retrieval
+	interfaceFields := result.GetInterfaceFields("Personnel")
+	if len(interfaceFields) != 3 {
+		t.Errorf("Expected 3 interface fields but got %d", len(interfaceFields))
+	}
+
+	// Debug output
+	t.Logf("Successfully parsed interface introspection response:")
+	t.Logf("  Total types: %d", len(result.Types))
+	t.Logf("  Interfaces found: %d", len(interfaces))
+	t.Logf("  Personnel implementations: %d", len(implementations))
+}
+
 func TestParseIntrospectionResponse_RealData(t *testing.T) {
 	// Load the real introspection response from file
 	file, err := os.Open("testdata/real_introspection_response.json")

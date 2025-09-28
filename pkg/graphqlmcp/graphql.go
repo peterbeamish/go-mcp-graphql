@@ -192,6 +192,12 @@ query IntrospectionQuery {
         name
         description
       }
+      interfaces {
+        name
+      }
+      possibleTypes {
+        name
+      }
     }
   }
 }

@@ -92,11 +92,115 @@ func (f *Field) generateSelectionSetFromAST(schema *Schema) (string, error) {
 		return "", fmt.Errorf("type definition is nil for type: %s", typeName)
 	}
 
+	// Check if this field returns an interface type (including arrays of interfaces)
+	if typeDef.Kind == ast.Interface {
+		// For interface types, use the interface query generation with inline fragments
+		return f.generateInterfaceSelectionSet(typeDef, schema)
+	}
+
 	// Generate selection set based on the actual type definition
 	// Use a visited map to prevent circular references and track the original type
 	visited := make(map[string]bool)
 	originalType := typeName // Track the original type to avoid self-referencing fields
 	return f.generateSelectionSetForTypeWithVisited(typeDef, schema, 0, visited, originalType)
+}
+
+// generateInterfaceSelectionSet generates a selection set for interface types with inline fragments
+func (f *Field) generateInterfaceSelectionSet(interfaceDef *ast.Definition, schema *Schema) (string, error) {
+	if interfaceDef == nil || interfaceDef.Kind != ast.Interface {
+		return "", fmt.Errorf("not an interface type")
+	}
+
+	var fields []string
+
+	// Add interface fields
+	for _, field := range interfaceDef.Fields {
+		if f.shouldIncludeFieldInInterface(field) {
+			// Check if this field is an object type that needs subfields
+			fieldTypeName := GetASTTypeName(field.Type)
+			fieldTypeDef := schema.GetTypeDefinition(fieldTypeName)
+			if fieldTypeDef != nil && fieldTypeDef.Kind == ast.Object {
+				// Generate subfields for object types
+				subfields, err := f.generateSelectionSetForTypeWithVisited(fieldTypeDef, schema, 1, make(map[string]bool), interfaceDef.Name)
+				if err != nil {
+					// If we can't generate subfields, just include the field name
+					fields = append(fields, field.Name)
+				} else if subfields != "" {
+					fields = append(fields, fmt.Sprintf("%s {\n    %s\n  }", field.Name, subfields))
+				} else {
+					fields = append(fields, field.Name)
+				}
+			} else {
+				// For scalar/enum types, just add the field name
+				fields = append(fields, field.Name)
+			}
+		}
+	}
+
+	// Add __typename for type discrimination
+	fields = append(fields, "__typename")
+
+	// Add inline fragments for each implementation
+	implementations := schema.GetImplementations(interfaceDef.Name)
+	for _, impl := range implementations {
+		implDef := schema.GetTypeDefinition(impl.Name)
+		if implDef == nil {
+			continue
+		}
+
+		// Start inline fragment
+		fragmentFields := []string{}
+
+		// Add implementation-specific fields that aren't already in the interface
+		interfaceFieldNames := make(map[string]bool)
+		for _, field := range interfaceDef.Fields {
+			interfaceFieldNames[field.Name] = true
+		}
+
+		for _, field := range implDef.Fields {
+			// Skip fields that are already in the interface
+			if interfaceFieldNames[field.Name] {
+				continue
+			}
+
+			// Skip fields that shouldn't be included
+			if !f.shouldIncludeFieldInInterface(field) {
+				continue
+			}
+
+			// Skip fields that might cause circular references
+			fieldTypeName := GetASTTypeName(field.Type)
+			if fieldTypeName == interfaceDef.Name || fieldTypeName == impl.Name {
+				continue
+			}
+
+			// Check if this field is an object type that needs subfields
+			fieldTypeDef := schema.GetTypeDefinition(fieldTypeName)
+			if fieldTypeDef != nil && fieldTypeDef.Kind == ast.Object {
+				// Generate subfields for object types
+				subfields, err := f.generateSelectionSetForTypeWithVisited(fieldTypeDef, schema, 1, make(map[string]bool), interfaceDef.Name)
+				if err != nil {
+					// If we can't generate subfields, just include the field name
+					fragmentFields = append(fragmentFields, field.Name)
+				} else if subfields != "" {
+					fragmentFields = append(fragmentFields, fmt.Sprintf("%s {\n        %s\n      }", field.Name, subfields))
+				} else {
+					fragmentFields = append(fragmentFields, field.Name)
+				}
+			} else {
+				// For scalar/enum types, just add the field name
+				fragmentFields = append(fragmentFields, field.Name)
+			}
+		}
+
+		// Only add the fragment if there are implementation-specific fields
+		if len(fragmentFields) > 0 {
+			fragment := fmt.Sprintf("... on %s {\n      %s\n    }", impl.Name, strings.Join(fragmentFields, "\n      "))
+			fields = append(fields, fragment)
+		}
+	}
+
+	return strings.Join(fields, "\n    "), nil
 }
 
 // getReturnTypeName extracts the type name from the field's return type
@@ -173,6 +277,11 @@ func (f *Field) generateSelectionSetForTypeWithVisited(typeDef *ast.Definition, 
 				}
 			}
 		}
+
+		// For interfaces, also include __typename field for type discrimination
+		if typeDef.Kind == ast.Interface {
+			fields = append(fields, "__typename")
+		}
 	case ast.Union:
 		// For unions, select common fields from all possible types
 		for _, possibleType := range typeDef.Types {
@@ -232,6 +341,40 @@ func (f *Field) shouldIncludeField(field *ast.FieldDefinition) bool {
 	return true
 }
 
+// shouldIncludeFieldInInterfaceLegacy determines if a field should be included in interface query generation (legacy version for Field type)
+func (f *Field) shouldIncludeFieldInInterfaceLegacy(field *Field) bool {
+	// Skip introspection fields
+	skipFields := map[string]bool{
+		"__typename": true,
+		"__schema":   true,
+		"__type":     true,
+	}
+
+	if skipFields[field.Name] {
+		return false
+	}
+
+	// Skip fields with complex arguments
+	if len(field.Args) > 2 {
+		return false
+	}
+
+	// Skip fields that might cause circular references (but allow "reportsTo" as it's a common interface pattern)
+	circularPatterns := []string{
+		"parent", "children", "related", "linked", "associated",
+		"owner", "owned", "creator", "created", "updater", "updated",
+		"source", "target", "from", "next", "previous",
+	}
+
+	for _, pattern := range circularPatterns {
+		if strings.Contains(strings.ToLower(field.Name), pattern) {
+			return false
+		}
+	}
+
+	return true
+}
+
 // generateFieldSelectionWithVisited generates a selection for a specific field with circular reference protection
 func (f *Field) generateFieldSelectionWithVisited(field *ast.FieldDefinition, schema *Schema, depth int, visited map[string]bool, originalType string) (string, error) {
 	// Check if this is a scalar type using the schema
@@ -260,4 +403,159 @@ func (f *Field) generateFieldSelectionWithVisited(field *ast.FieldDefinition, sc
 	}
 
 	return fmt.Sprintf("%s {\n      %s\n    }", field.Name, strings.ReplaceAll(nestedSelection, "\n    ", "\n      ")), nil
+}
+
+// GenerateInterfaceQueryString generates a GraphQL query string for an interface field with inline fragments
+func (f *Field) GenerateInterfaceQueryString(schema *Schema) (string, error) {
+	if schema == nil {
+		return "", fmt.Errorf("schema is nil")
+	}
+
+	// Get the return type name
+	typeName := f.getReturnTypeNameFromAST()
+	if typeName == "" {
+		return "", fmt.Errorf("type name is empty")
+	}
+
+	// Check if this is an interface type
+	typeDef := schema.GetTypeDefinition(typeName)
+	if typeDef == nil || typeDef.Kind != ast.Interface {
+		// Not an interface, use regular query generation
+		return f.GenerateQueryStringWithSchema(schema)
+	}
+
+	// Generate interface query with inline fragments for each implementation
+	var operation strings.Builder
+
+	// Start with the operation
+	operation.WriteString("query")
+	if len(f.Args) > 0 {
+		operation.WriteString("(")
+		for i, arg := range f.Args {
+			if i > 0 {
+				operation.WriteString(", ")
+			}
+			operation.WriteString("$")
+			operation.WriteString(arg.Name)
+			operation.WriteString(": ")
+			operation.WriteString(arg.Type.GetTypeName())
+			if arg.Type.IsNonNull() {
+				operation.WriteString("!")
+			}
+		}
+		operation.WriteString(")")
+	}
+	operation.WriteString(" {\n  ")
+	operation.WriteString(f.Name)
+
+	// Add field arguments
+	if len(f.Args) > 0 {
+		operation.WriteString("(")
+		for i, arg := range f.Args {
+			if i > 0 {
+				operation.WriteString(", ")
+			}
+			operation.WriteString(arg.Name)
+			operation.WriteString(": $")
+			operation.WriteString(arg.Name)
+		}
+		operation.WriteString(")")
+	}
+
+	// Add interface fields and inline fragments
+	operation.WriteString(" {\n    ")
+
+	// Add interface fields
+	interfaceFields := schema.GetInterfaceFields(typeName)
+	for _, field := range interfaceFields {
+		operation.WriteString(field.Name)
+		operation.WriteString("\n    ")
+	}
+
+	// Add __typename for type discrimination
+	operation.WriteString("__typename\n    ")
+
+	// Add inline fragments for each implementation
+	implementations := schema.GetImplementations(typeName)
+	for _, impl := range implementations {
+		operation.WriteString("... on ")
+		operation.WriteString(impl.Name)
+		operation.WriteString(" {\n      ")
+
+		// Add implementation-specific fields
+		for _, field := range impl.Fields {
+			// Skip fields that are already in the interface
+			isInterfaceField := false
+			for _, ifaceField := range interfaceFields {
+				if field.Name == ifaceField.Name {
+					isInterfaceField = true
+					break
+				}
+			}
+
+			if !isInterfaceField && f.shouldIncludeFieldInInterfaceLegacy(field) {
+				operation.WriteString(field.Name)
+				operation.WriteString("\n      ")
+			}
+		}
+
+		operation.WriteString("}\n    ")
+	}
+
+	operation.WriteString("\n  }\n}")
+
+	return operation.String(), nil
+}
+
+// shouldIncludeFieldInInterface determines if a field should be included in interface query generation
+func (f *Field) shouldIncludeFieldInInterface(field *ast.FieldDefinition) bool {
+	// Skip introspection fields
+	skipFields := map[string]bool{
+		"__typename": true,
+		"__schema":   true,
+		"__type":     true,
+	}
+
+	if skipFields[field.Name] {
+		return false
+	}
+
+	// Skip fields with complex arguments
+	if len(field.Arguments) > 2 {
+		return false
+	}
+
+	// Skip fields that might cause circular references
+	// Be more specific to avoid filtering legitimate interface fields like "reportsTo"
+	circularPatterns := []string{
+		"parent", "children", "related", "linked", "associated",
+		"owner", "owned", "creator", "created", "updater", "updated",
+		"source", "target", "from", "next", "previous",
+		// More specific patterns that are likely to cause circular references
+		"parent", "child", "children", "ancestor", "descendant",
+		"owner", "owned", "creator", "created", "updater", "updated",
+		"source", "target", "from", "next", "previous",
+		"self", "itself", "myself", "yourself", "himself", "herself",
+	}
+
+	for _, pattern := range circularPatterns {
+		if strings.Contains(strings.ToLower(field.Name), pattern) {
+			return false
+		}
+	}
+
+	// Allow specific interface patterns that are commonly used and safe
+	allowedPatterns := []string{
+		"reportsTo", "reports", "manager", "supervisor", "lead",
+		"team", "department", "division", "unit", "group",
+		"role", "title", "position", "level", "grade",
+	}
+
+	for _, pattern := range allowedPatterns {
+		if strings.Contains(strings.ToLower(field.Name), pattern) {
+			return true
+		}
+	}
+
+	return true
 }

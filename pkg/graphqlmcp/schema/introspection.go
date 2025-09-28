@@ -278,6 +278,7 @@ func parseTypeRefToAST(data map[string]interface{}) (*ast.Type, error) {
 				Elem:    innerType,
 			}, nil
 		}
+		// Handle case where ofType might be null or missing
 		return nil, fmt.Errorf("NON_NULL type missing ofType")
 	case "LIST":
 		if ofType, ok := data["ofType"].(map[string]interface{}); ok {

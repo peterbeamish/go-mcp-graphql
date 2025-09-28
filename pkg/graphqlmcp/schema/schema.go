@@ -60,3 +60,64 @@ func (s *Schema) GetSchemaSDL() string {
 
 	return strings.TrimSpace(sdl.String())
 }
+
+// GetInterfaces returns all interface types in the schema
+func (s *Schema) GetInterfaces() []*Type {
+	if s.parsedSchema == nil {
+		return nil
+	}
+
+	var interfaces []*Type
+	for _, typeDef := range s.parsedSchema.Types {
+		if typeDef != nil && typeDef.Kind == ast.Interface && !isBuiltinType(typeDef.Name) && !isIntrospectionType(typeDef.Name) {
+			interfaces = append(interfaces, convertASTToType(typeDef))
+		}
+	}
+	return interfaces
+}
+
+// GetImplementations returns all types that implement the given interface
+func (s *Schema) GetImplementations(interfaceName string) []*Type {
+	if s.parsedSchema == nil {
+		return nil
+	}
+
+	var implementations []*Type
+	for _, typeDef := range s.parsedSchema.Types {
+		if typeDef != nil && typeDef.Kind == ast.Object {
+			for _, iface := range typeDef.Interfaces {
+				if iface == interfaceName {
+					implementations = append(implementations, convertASTToType(typeDef))
+					break
+				}
+			}
+		}
+	}
+	return implementations
+}
+
+// GetInterfaceFields returns all fields defined by an interface
+func (s *Schema) GetInterfaceFields(interfaceName string) []*Field {
+	if s.parsedSchema == nil {
+		return nil
+	}
+
+	typeDef := s.GetTypeDefinition(interfaceName)
+	if typeDef == nil || typeDef.Kind != ast.Interface {
+		return nil
+	}
+
+	// Convert AST fields to Field objects
+	fields := make([]*Field, 0, len(typeDef.Fields))
+	for _, astField := range typeDef.Fields {
+		field := &Field{
+			Name:        astField.Name,
+			Description: astField.Description,
+			Type:        ConvertTypeFromAST(astField.Type),
+			ASTType:     astField.Type,
+		}
+		fields = append(fields, field)
+	}
+
+	return fields
+}
