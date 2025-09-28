@@ -66,7 +66,59 @@ func (f *Field) GenerateQueryStringWithSchema(schema *Schema) (string, error) {
 
 // GenerateMutationString generates a GraphQL mutation string for a field
 func (f *Field) GenerateMutationStringWithSchema(schema *Schema) (string, error) {
-	return f.GenerateQueryStringWithSchema(schema)
+	if schema == nil {
+		return "", fmt.Errorf("schema is nil")
+	}
+
+	var mutation strings.Builder
+
+	// Start with the mutation keyword and variable declarations
+	mutation.WriteString("mutation")
+	if len(f.Args) > 0 {
+		mutation.WriteString("(")
+		for i, arg := range f.Args {
+			if i > 0 {
+				mutation.WriteString(", ")
+			}
+			mutation.WriteString("$")
+			mutation.WriteString(arg.Name)
+			mutation.WriteString(": ")
+			mutation.WriteString(arg.Type.GetTypeName())
+			if arg.Type.IsNonNull() {
+				mutation.WriteString("!")
+			}
+		}
+		mutation.WriteString(")")
+	}
+	mutation.WriteString(" {\n  ")
+	mutation.WriteString(f.Name)
+
+	// Add field arguments (using variables)
+	if len(f.Args) > 0 {
+		mutation.WriteString("(")
+		for i, arg := range f.Args {
+			if i > 0 {
+				mutation.WriteString(", ")
+			}
+			mutation.WriteString(arg.Name)
+			mutation.WriteString(": $")
+			mutation.WriteString(arg.Name)
+		}
+		mutation.WriteString(")")
+	}
+
+	// Add selection set based on the return type
+	mutation.WriteString(" {\n    ")
+
+	selectionSet, err := f.generateSelectionSetFromAST(schema)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate selection set: %w", err)
+	}
+	mutation.WriteString(selectionSet)
+
+	mutation.WriteString("\n  }\n}")
+
+	return mutation.String(), nil
 }
 
 // generateSelectionSetFromAST generates a selection set using the parsed schema

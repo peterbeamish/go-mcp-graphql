@@ -179,19 +179,23 @@ func GetMux(server *MCPGraphQLServer) *http.ServeMux {
 
 		// Add query tools
 		for _, query := range queries {
+			inputSchema := server.createInputSchema(query)
 			tools = append(tools, map[string]interface{}{
 				"name":        "query_" + query.Name,
 				"description": query.Description,
 				"type":        "query",
+				"inputSchema": inputSchema,
 			})
 		}
 
 		// Add mutation tools
 		for _, mutation := range mutations {
+			inputSchema := server.createInputSchema(mutation)
 			tools = append(tools, map[string]interface{}{
 				"name":        "mutation_" + mutation.Name,
 				"description": mutation.Description,
 				"type":        "mutation",
+				"inputSchema": inputSchema,
 			})
 		}
 
