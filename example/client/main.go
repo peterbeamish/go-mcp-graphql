@@ -11,7 +11,7 @@ import (
 
 func main() {
 	// Create an HTTP client to communicate with the MCP server
-	client := graphqlmcp.CreateHTTPClient("http://localhost:8080")
+	client := graphqlmcp.CreateHTTPClient("http://localhost:8081/mcp")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()

@@ -16,6 +16,9 @@ type Resolver struct {
 	maintenanceRecords []*models.MaintenanceRecord
 	operationalMetrics []*models.OperationalMetric
 	alerts             []*models.EquipmentAlert
+	personnel          []models.Personnel
+	managers           []*models.Manager
+	associates         []*models.Associate
 }
 
 // NewResolver creates a new resolver with sample data
@@ -183,4 +186,160 @@ func (r *Resolver) initializeSampleData() {
 	}
 
 	r.alerts = append(r.alerts, alert1)
+
+	// Create sample personnel
+	manager1 := &models.Manager{
+		ID:            "manager-1",
+		Name:          "John Smith",
+		Email:         "john.smith@company.com",
+		Phone:         "+1-313-555-0101",
+		JoinedAt:      "2020-01-15",
+		Status:        models.PersonnelStatusActive,
+		Department:    "Production",
+		DirectReports: 5,
+		Level:         4,
+	}
+
+	manager2 := &models.Manager{
+		ID:            "manager-2",
+		Name:          "Sarah Johnson",
+		Email:         "sarah.johnson@company.com",
+		Phone:         "+1-312-555-0201",
+		JoinedAt:      "2019-06-01",
+		Status:        models.PersonnelStatusActive,
+		Department:    "Quality Control",
+		DirectReports: 3,
+		Level:         3,
+	}
+
+	associate1 := &models.Associate{
+		ID:         "associate-1",
+		Name:       "Mike Wilson",
+		Email:      "mike.wilson@company.com",
+		Phone:      "+1-313-555-0102",
+		JoinedAt:   "2021-03-10",
+		Status:     models.PersonnelStatusActive,
+		JobTitle:   "Machine Operator",
+		Department: "Production",
+		ReportsTo:  manager1,
+	}
+
+	associate2 := &models.Associate{
+		ID:         "associate-2",
+		Name:       "Lisa Brown",
+		Email:      "lisa.brown@company.com",
+		Phone:      "+1-312-555-0202",
+		JoinedAt:   "2022-01-20",
+		Status:     models.PersonnelStatusActive,
+		JobTitle:   "Quality Inspector",
+		Department: "Quality Control",
+		ReportsTo:  manager2,
+	}
+
+	associate3 := &models.Associate{
+		ID:         "associate-3",
+		Name:       "David Lee",
+		Email:      "david.lee@company.com",
+		Phone:      "+1-313-555-0103",
+		JoinedAt:   "2020-11-05",
+		Status:     models.PersonnelStatusActive,
+		JobTitle:   "Maintenance Technician",
+		Department: "Maintenance",
+		ReportsTo:  manager1,
+	}
+
+	// Add personnel to global list
+	r.personnel = append(r.personnel, manager1, manager2, associate1, associate2, associate3)
+
+	// Add personnel to facilities
+	facility1.Personnel = append(facility1.Personnel, manager1, associate1, associate3)
+	facility2.Personnel = append(facility2.Personnel, manager2, associate2)
+}
+
+// Helper methods for finding entities by ID
+
+func (r *Resolver) findEquipmentByID(id string) *models.Equipment {
+	for _, equipment := range r.equipment {
+		if equipment.ID == id {
+			return equipment
+		}
+	}
+	return nil
+}
+
+func (r *Resolver) findFacilityByID(id string) *models.Facility {
+	for _, facility := range r.facilities {
+		if facility.ID == id {
+			return facility
+		}
+	}
+	return nil
+}
+
+func (r *Resolver) findMaintenanceRecordByID(id string) *models.MaintenanceRecord {
+	for _, maintenance := range r.maintenanceRecords {
+		if maintenance.ID == id {
+			return maintenance
+		}
+	}
+	return nil
+}
+
+func (r *Resolver) findOperationalMetricByID(id string) *models.OperationalMetric {
+	for _, metric := range r.operationalMetrics {
+		if metric.ID == id {
+			return metric
+		}
+	}
+	return nil
+}
+
+func (r *Resolver) findAlertByID(id string) *models.EquipmentAlert {
+	for _, alert := range r.alerts {
+		if alert.ID == id {
+			return alert
+		}
+	}
+	return nil
+}
+
+// Helper methods for removing entities
+
+func (r *Resolver) removeEquipmentFromFacility(facility *models.Facility, equipment *models.Equipment) {
+	for i, e := range facility.Equipment {
+		if e.ID == equipment.ID {
+			facility.Equipment = append(facility.Equipment[:i], facility.Equipment[i+1:]...)
+			break
+		}
+	}
+}
+
+func (r *Resolver) removeMaintenanceRecordsForEquipment(equipmentID string) {
+	var filtered []*models.MaintenanceRecord
+	for _, maintenance := range r.maintenanceRecords {
+		if maintenance.Equipment.ID != equipmentID {
+			filtered = append(filtered, maintenance)
+		}
+	}
+	r.maintenanceRecords = filtered
+}
+
+func (r *Resolver) removeOperationalMetricsForEquipment(equipmentID string) {
+	var filtered []*models.OperationalMetric
+	for _, metric := range r.operationalMetrics {
+		if metric.Equipment.ID != equipmentID {
+			filtered = append(filtered, metric)
+		}
+	}
+	r.operationalMetrics = filtered
+}
+
+func (r *Resolver) removeAlertsForEquipment(equipmentID string) {
+	var filtered []*models.EquipmentAlert
+	for _, alert := range r.alerts {
+		if alert.Equipment.ID != equipmentID {
+			filtered = append(filtered, alert)
+		}
+	}
+	r.alerts = filtered
 }

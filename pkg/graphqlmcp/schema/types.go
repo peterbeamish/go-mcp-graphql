@@ -22,6 +22,10 @@ type Type struct {
 	Description string      `json:"description"`
 	Fields      []*Field    `json:"fields"`
 	Args        []*Argument `json:"args"`
+
+	// Interface-specific fields
+	Interfaces    []string `json:"interfaces,omitempty"`    // For objects that implement interfaces
+	PossibleTypes []string `json:"possibleTypes,omitempty"` // For interfaces and unions
 }
 
 // Field represents a GraphQL field

@@ -393,3 +393,104 @@ func containsSubstring(s, substr string) bool {
 	}
 	return false
 }
+
+func TestField_GenerateQueryStringWithSchema_Personnel(t *testing.T) {
+	// Create a schema with Personnel interface
+	// Use the same definitions for both parsedSchema and typeRegistry
+	personnelDef := &ast.Definition{
+		Name: "Personnel",
+		Kind: ast.Interface,
+		Fields: []*ast.FieldDefinition{
+			{Name: "id", Type: ast.NamedType("ID", nil)},
+			{Name: "name", Type: ast.NamedType("String", nil)},
+			{Name: "email", Type: ast.NamedType("String", nil)},
+			{Name: "joinedAt", Type: ast.NamedType("String", nil)},
+		},
+	}
+
+	managerDef := &ast.Definition{
+		Name:       "Manager",
+		Kind:       ast.Object,
+		Interfaces: []string{"Personnel"},
+		Fields: []*ast.FieldDefinition{
+			{Name: "id", Type: ast.NamedType("ID", nil)},
+			{Name: "name", Type: ast.NamedType("String", nil)},
+			{Name: "email", Type: ast.NamedType("String", nil)},
+			{Name: "joinedAt", Type: ast.NamedType("String", nil)},
+			{Name: "department", Type: ast.NamedType("String", nil)},
+			{Name: "level", Type: ast.NamedType("Int", nil)},
+		},
+	}
+
+	associateDef := &ast.Definition{
+		Name:       "Associate",
+		Kind:       ast.Object,
+		Interfaces: []string{"Personnel"},
+		Fields: []*ast.FieldDefinition{
+			{Name: "id", Type: ast.NamedType("ID", nil)},
+			{Name: "name", Type: ast.NamedType("String", nil)},
+			{Name: "email", Type: ast.NamedType("String", nil)},
+			{Name: "joinedAt", Type: ast.NamedType("String", nil)},
+			{Name: "jobTitle", Type: ast.NamedType("String", nil)},
+			{Name: "reportsTo", Type: ast.NamedType("Manager", nil)},
+		},
+	}
+
+	schema := &Schema{
+		parsedSchema: &ast.Schema{
+			Types: map[string]*ast.Definition{
+				"Personnel": personnelDef,
+				"Manager":   managerDef,
+				"Associate": associateDef,
+			},
+		},
+		typeRegistry: map[string]*ast.Definition{
+			"Personnel": personnelDef,
+			"Manager":   managerDef,
+			"Associate": associateDef,
+		},
+	}
+
+	// Create a field that returns Personnel array
+	field := &Field{
+		Name:    "personnel",
+		ASTType: ast.ListType(ast.NamedType("Personnel", nil), nil),
+	}
+
+	// Generate the query
+	query, err := field.GenerateQueryStringWithSchema(schema)
+	if err != nil {
+		t.Fatalf("Failed to generate query: %v", err)
+	}
+
+	// Print the generated query for demonstration
+	t.Logf("Generated Personnel Interface Query:\n%s", query)
+
+	// Check that the query contains the expected elements
+	expectedElements := []string{
+		"query {",
+		"personnel {",
+		"id",
+		"name",
+		"email",
+		"joinedAt",
+		"__typename",
+		"... on Manager {",
+		"department",
+		"level",
+		"... on Associate {",
+		"jobTitle",
+		"reportsTo",
+	}
+
+	for _, element := range expectedElements {
+		if !containsString(query, element) {
+			t.Errorf("Query should contain '%s', but got: %s", element, query)
+		}
+	}
+
+	// Verify the structure is correct
+	if !containsString(query, "query {\n  personnel {\n    ") {
+		t.Errorf("Query should have proper structure, but got: %s", query)
+	}
+}

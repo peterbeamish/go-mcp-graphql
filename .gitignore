@@ -52,11 +52,6 @@ example/*/main
 example/*/client
 example/*/simple
 
-# Generated files
-example/gqlgen-server/graphql/
-example/gqlgen-server/models/
-example/gqlgen-server/resolver/schema.resolvers.go
-
 # Test files
 test_query.go
 test_query_format.go
