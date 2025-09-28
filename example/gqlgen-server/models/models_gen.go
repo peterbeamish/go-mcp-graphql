@@ -71,6 +71,12 @@ type AddManagerInput struct {
 	JoinedAt string `json:"joinedAt"`
 }
 
+type AddOrgChainInput struct {
+	Manager   []*AddManagerInput   `json:"manager,omitempty"`
+	Associate []*AddAssociateInput `json:"associate,omitempty"`
+	NextLevel *AddOrgChainInput    `json:"nextLevel,omitempty"`
+}
+
 // Represents an associate at a facility.
 // Performs operational tasks and reports to managers.
 type Associate struct {

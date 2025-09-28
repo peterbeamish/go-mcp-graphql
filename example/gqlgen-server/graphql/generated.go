@@ -201,6 +201,7 @@ type ComplexityRoot struct {
 	Mutation struct {
 		AddAssociateToFacility      func(childComplexity int, facilityID string, input models.AddAssociateInput) int
 		AddManagerToFacility        func(childComplexity int, facilityID string, input models.AddManagerInput) int
+		AddOrgChainToFacility       func(childComplexity int, facilityID string, input models.AddOrgChainInput) int
 		CompleteMaintenance         func(childComplexity int, id string, input models.CompleteMaintenanceInput) int
 		CreateEquipment             func(childComplexity int, input models.CreateEquipmentInput) int
 		CreateFacility              func(childComplexity int, input models.CreateFacilityInput) int
@@ -287,6 +288,7 @@ type MutationResolver interface {
 	AddManagerToFacility(ctx context.Context, facilityID string, input models.AddManagerInput) (*models.Manager, error)
 	AddAssociateToFacility(ctx context.Context, facilityID string, input models.AddAssociateInput) (*models.Associate, error)
 	RemovePersonnelFromFacility(ctx context.Context, facilityID string, personnelID string) (bool, error)
+	AddOrgChainToFacility(ctx context.Context, facilityID string, input models.AddOrgChainInput) ([]models.Personnel, error)
 }
 type QueryResolver interface {
 	Equipment(ctx context.Context) ([]*models.Equipment, error)
@@ -1033,6 +1035,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.AddManagerToFacility(childComplexity, args["facilityId"].(string), args["input"].(models.AddManagerInput)), true
+	case "Mutation.addOrgChainToFacility":
+		if e.complexity.Mutation.AddOrgChainToFacility == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_addOrgChainToFacility_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AddOrgChainToFacility(childComplexity, args["facilityId"].(string), args["input"].(models.AddOrgChainInput)), true
 	case "Mutation.completeMaintenance":
 		if e.complexity.Mutation.CompleteMaintenance == nil {
 			break
@@ -1447,6 +1460,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputAddAssociateInput,
 		ec.unmarshalInputAddManagerInput,
+		ec.unmarshalInputAddOrgChainInput,
 		ec.unmarshalInputCompleteMaintenanceInput,
 		ec.unmarshalInputContactInfoInput,
 		ec.unmarshalInputCreateEquipmentInput,
@@ -1716,6 +1730,13 @@ type Mutation {
   Removes the specified personnel from the facility.
   """
   removePersonnelFromFacility(facilityId: ID!, personnelId: ID!): Boolean!
+
+
+  """
+  Add an organization chain to a facility.
+  Creates a new organization chain and assigns it to the specified facility.
+  """
+  addOrgChainToFacility(facilityId: ID!, input: AddOrgChainInput!): [Personnel!]!
 }
 
 """
@@ -2980,7 +3001,12 @@ input AddAssociateInput {
   """ training required """
   trainingRequired: Boolean = true
 }
-`, BuiltIn: false},
+
+input AddOrgChainInput {
+  manager: [AddManagerInput]
+  associate: [AddAssociateInput]
+  nextLevel: AddOrgChainInput
+}`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
@@ -3013,6 +3039,22 @@ func (ec *executionContext) field_Mutation_addManagerToFacility_args(ctx context
 	}
 	args["facilityId"] = arg0
 	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNAddManagerInput2githubᚗcomᚋpeterbeamishᚋgoᚑmcpᚑgraphqlᚋexampleᚋgqlgenᚑserverᚋmodelsᚐAddManagerInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_addOrgChainToFacility_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "facilityId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["facilityId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNAddOrgChainInput2githubᚗcomᚋpeterbeamishᚋgoᚑmcpᚑgraphqlᚋexampleᚋgqlgenᚑserverᚋmodelsᚐAddOrgChainInput)
 	if err != nil {
 		return nil, err
 	}
@@ -7785,6 +7827,47 @@ func (ec *executionContext) fieldContext_Mutation_removePersonnelFromFacility(ct
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_addOrgChainToFacility(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_addOrgChainToFacility,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().AddOrgChainToFacility(ctx, fc.Args["facilityId"].(string), fc.Args["input"].(models.AddOrgChainInput))
+		},
+		nil,
+		ec.marshalNPersonnel2ᚕgithubᚗcomᚋpeterbeamishᚋgoᚑmcpᚑgraphqlᚋexampleᚋgqlgenᚑserverᚋmodelsᚐPersonnelᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_addOrgChainToFacility(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_addOrgChainToFacility_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _OperationalMetric_id(ctx context.Context, field graphql.CollectedField, obj *models.OperationalMetric) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -11050,6 +11133,47 @@ func (ec *executionContext) unmarshalInputAddManagerInput(ctx context.Context, o
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputAddOrgChainInput(ctx context.Context, obj any) (models.AddOrgChainInput, error) {
+	var it models.AddOrgChainInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"manager", "associate", "nextLevel"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "manager":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("manager"))
+			data, err := ec.unmarshalOAddManagerInput2ᚕᚖgithubᚗcomᚋpeterbeamishᚋgoᚑmcpᚑgraphqlᚋexampleᚋgqlgenᚑserverᚋmodelsᚐAddManagerInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Manager = data
+		case "associate":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("associate"))
+			data, err := ec.unmarshalOAddAssociateInput2ᚕᚖgithubᚗcomᚋpeterbeamishᚋgoᚑmcpᚑgraphqlᚋexampleᚋgqlgenᚑserverᚋmodelsᚐAddAssociateInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Associate = data
+		case "nextLevel":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nextLevel"))
+			data, err := ec.unmarshalOAddOrgChainInput2ᚖgithubᚗcomᚋpeterbeamishᚋgoᚑmcpᚑgraphqlᚋexampleᚋgqlgenᚑserverᚋmodelsᚐAddOrgChainInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NextLevel = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCompleteMaintenanceInput(ctx context.Context, obj any) (models.CompleteMaintenanceInput, error) {
 	var it models.CompleteMaintenanceInput
 	asMap := map[string]any{}
@@ -13051,6 +13175,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "addOrgChainToFacility":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_addOrgChainToFacility(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -13950,6 +14081,11 @@ func (ec *executionContext) unmarshalNAddAssociateInput2githubᚗcomᚋpeterbeam
 
 func (ec *executionContext) unmarshalNAddManagerInput2githubᚗcomᚋpeterbeamishᚋgoᚑmcpᚑgraphqlᚋexampleᚋgqlgenᚑserverᚋmodelsᚐAddManagerInput(ctx context.Context, v any) (models.AddManagerInput, error) {
 	res, err := ec.unmarshalInputAddManagerInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNAddOrgChainInput2githubᚗcomᚋpeterbeamishᚋgoᚑmcpᚑgraphqlᚋexampleᚋgqlgenᚑserverᚋmodelsᚐAddOrgChainInput(ctx context.Context, v any) (models.AddOrgChainInput, error) {
+	res, err := ec.unmarshalInputAddOrgChainInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -14976,6 +15112,66 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalOAddAssociateInput2ᚕᚖgithubᚗcomᚋpeterbeamishᚋgoᚑmcpᚑgraphqlᚋexampleᚋgqlgenᚑserverᚋmodelsᚐAddAssociateInput(ctx context.Context, v any) ([]*models.AddAssociateInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*models.AddAssociateInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalOAddAssociateInput2ᚖgithubᚗcomᚋpeterbeamishᚋgoᚑmcpᚑgraphqlᚋexampleᚋgqlgenᚑserverᚋmodelsᚐAddAssociateInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalOAddAssociateInput2ᚖgithubᚗcomᚋpeterbeamishᚋgoᚑmcpᚑgraphqlᚋexampleᚋgqlgenᚑserverᚋmodelsᚐAddAssociateInput(ctx context.Context, v any) (*models.AddAssociateInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputAddAssociateInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOAddManagerInput2ᚕᚖgithubᚗcomᚋpeterbeamishᚋgoᚑmcpᚑgraphqlᚋexampleᚋgqlgenᚑserverᚋmodelsᚐAddManagerInput(ctx context.Context, v any) ([]*models.AddManagerInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*models.AddManagerInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalOAddManagerInput2ᚖgithubᚗcomᚋpeterbeamishᚋgoᚑmcpᚑgraphqlᚋexampleᚋgqlgenᚑserverᚋmodelsᚐAddManagerInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalOAddManagerInput2ᚖgithubᚗcomᚋpeterbeamishᚋgoᚑmcpᚑgraphqlᚋexampleᚋgqlgenᚑserverᚋmodelsᚐAddManagerInput(ctx context.Context, v any) (*models.AddManagerInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputAddManagerInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOAddOrgChainInput2ᚖgithubᚗcomᚋpeterbeamishᚋgoᚑmcpᚑgraphqlᚋexampleᚋgqlgenᚑserverᚋmodelsᚐAddOrgChainInput(ctx context.Context, v any) (*models.AddOrgChainInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputAddOrgChainInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v any) (bool, error) {
