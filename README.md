@@ -1,6 +1,10 @@
 # Go MCP GraphQL Library
 
-A Go library that introspects a GraphQL server and automatically generates MCP (Model Context Protocol) tools, allowing the MCP server to be hosted via HTTP.
+A Go library that creates an MPC server and allows for automatic adding of tools from a specified GraphQL API via introspection.
+
+## Background
+- [Intro to MCP](https://modelcontextprotocol.io/docs/getting-started/intro)
+- [MCP Servers](https://modelcontextprotocol.io/docs/learn/server-concepts)
 
 ## Table of Contents
 
