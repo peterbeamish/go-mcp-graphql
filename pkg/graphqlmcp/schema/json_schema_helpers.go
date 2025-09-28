@@ -67,7 +67,8 @@ func (s *Schema) createBaseSchemaFromAST(astType *ast.Type, description string, 
 	// Handle list types
 	if IsASTTypeList(astType) {
 		schema["type"] = "array"
-		itemSchema := s.createBaseSchemaFromAST(astType.Elem, description, defaultValue)
+		// For list items, use a different function that doesn't add array wrappers
+		itemSchema := s.createItemSchemaFromAST(astType.Elem, defaultValue)
 		schema["items"] = itemSchema
 		return schema
 	}
@@ -89,6 +90,32 @@ func (s *Schema) createBaseSchemaFromAST(astType *ast.Type, description string, 
 	}
 
 	return schema
+}
+
+// createItemSchemaFromAST creates a JSON schema for list items without adding array wrappers
+func (s *Schema) createItemSchemaFromAST(astType *ast.Type, defaultValue *ast.Value) map[string]interface{} {
+	if astType == nil {
+		return map[string]interface{}{"type": "string"}
+	}
+
+	// Handle the innermost type (scalar or named type)
+	if astType.NamedType != "" {
+		return map[string]interface{}{
+			"type": ASTTypeToJSONSchemaType(astType),
+		}
+	}
+
+	// Handle wrapper types (NON_NULL)
+	if astType.NonNull {
+		return s.createItemSchemaFromAST(astType.Elem, defaultValue)
+	}
+
+	// Handle LIST types - this shouldn't happen in normal cases, but handle it
+	if astType.Elem != nil {
+		return s.createItemSchemaFromAST(astType.Elem, defaultValue)
+	}
+
+	return map[string]interface{}{"type": "string"}
 }
 
 // CreateTypeRefSchema creates a JSON schema for a TypeRef
@@ -115,12 +142,14 @@ func (s *Schema) createBaseSchemaFromTypeRef(typeRef *TypeRef, description, defa
 		return schema
 	}
 
-	// Handle input object types
+	// Handle input object types - but don't flatten them when creating argument schemas
 	if typeRef.GetTypeName() != "" && !isBuiltinType(typeRef.GetTypeName()) {
 		if inputObjectSchema := s.CreateInputObjectSchema(typeRef.GetTypeName()); inputObjectSchema != nil {
-			// Merge the input object schema with the current schema
-			for key, value := range inputObjectSchema {
-				schema[key] = value
+			// For input object types, we want to reference the schema, not flatten it
+			// This preserves the proper nesting structure for arguments
+			schema["properties"] = inputObjectSchema["properties"]
+			if required, ok := inputObjectSchema["required"].([]string); ok && len(required) > 0 {
+				schema["required"] = required
 			}
 		}
 	}

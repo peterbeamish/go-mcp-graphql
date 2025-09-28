@@ -53,21 +53,32 @@ func ConvertTypeFromAST(astType *ast.Type) *TypeRef {
 
 	typ := &TypeRef{}
 
-	// Handle the innermost type (scalar or named type)
-	if astType.NamedType != "" {
-		typ.Name = astType.NamedType
-		typ.Kind = "SCALAR" // Default to SCALAR for named types
-		return typ
-	}
-
-	// Handle wrapper types (NON_NULL or LIST)
+	// Handle wrapper types first (NON_NULL or LIST)
 	if astType.NonNull {
 		typ.Kind = "NON_NULL"
-		typ.OfType = ConvertTypeFromAST(astType.Elem)
+		// For NON_NULL types, we need to create the inner type
+		if astType.NamedType != "" {
+			// NON_NULL with a named type (e.g., NON_NULL String)
+			typ.OfType = &TypeRef{
+				Name: astType.NamedType,
+				Kind: "SCALAR",
+			}
+		} else {
+			// NON_NULL with a complex type (e.g., NON_NULL LIST)
+			typ.OfType = ConvertTypeFromAST(astType.Elem)
+		}
 	} else if astType.Elem != nil {
 		// This is a LIST type
 		typ.Kind = "LIST"
 		typ.OfType = ConvertTypeFromAST(astType.Elem)
+	} else if astType.NamedType != "" {
+		// Handle the innermost type (scalar or named type)
+		typ.Name = astType.NamedType
+		typ.Kind = "SCALAR" // Default to SCALAR for named types
+	} else {
+		// This shouldn't happen, but handle gracefully
+		typ.Kind = "SCALAR"
+		typ.Name = "String"
 	}
 
 	return typ

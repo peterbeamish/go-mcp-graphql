@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
+	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/peterbeamish/go-mcp-graphql/pkg/graphqlmcp/schema"
@@ -15,6 +17,7 @@ type MCPGraphQLServer struct {
 	executor  GraphQLExecutor
 	Schema    *schema.Schema
 	mcpServer *mcp.Server
+	logger    *slog.Logger
 }
 
 // NewMCPGraphQLServer creates a new MCP GraphQL server
@@ -44,6 +47,7 @@ func NewMCPGraphQLServerWithExecutor(executor GraphQLExecutor) (*MCPGraphQLServe
 		executor:  executor,
 		Schema:    schema,
 		mcpServer: mcpServer,
+		logger:    slog.Default(),
 	}
 
 	// Add tools for queries and mutations
@@ -145,24 +149,64 @@ func (s *MCPGraphQLServer) createInputSchema(field *schema.Field) map[string]int
 
 // executeGraphQLOperation executes a GraphQL query or mutation
 func (s *MCPGraphQLServer) executeGraphQLOperation(ctx context.Context, field *schema.Field, input map[string]interface{}, operationType string) (*mcp.CallToolResult, error) {
+	// Generate a request ID for tracking
+	requestID := fmt.Sprintf("req_%d", time.Now().UnixNano())
+
+	// Log tool call initiation
+	s.logger.Info("Tool call initiated",
+		"request_id", requestID,
+		"operation_type", operationType,
+		"field_name", field.Name,
+		"input_args", len(field.Args),
+		"input_values", input,
+	)
+
 	// Generate the GraphQL query/mutation string
 	var queryString string
 	var err error
 	if operationType == "query" {
 		queryString, err = field.GenerateQueryStringWithSchema(s.Schema)
 		if err != nil {
+			s.logger.Error("Failed to generate query string",
+				"request_id", requestID,
+				"field_name", field.Name,
+				"error", err,
+			)
 			return nil, fmt.Errorf("failed to generate query string: %w", err)
 		}
 	} else {
 		queryString, err = field.GenerateMutationStringWithSchema(s.Schema)
 		if err != nil {
+			s.logger.Error("Failed to generate mutation string",
+				"request_id", requestID,
+				"field_name", field.Name,
+				"error", err,
+			)
 			return nil, fmt.Errorf("failed to generate mutation string: %w", err)
 		}
 	}
 
+	// Log the generated query/mutation
+	s.logger.Debug("Generated GraphQL operation",
+		"request_id", requestID,
+		"operation_type", operationType,
+		"field_name", field.Name,
+		"query", queryString,
+	)
+
 	// Execute the GraphQL operation
+	startTime := time.Now()
 	resp, err := s.executor.ExecuteQuery(ctx, queryString, input)
+	duration := time.Since(startTime)
+
 	if err != nil {
+		s.logger.Error("GraphQL execution failed",
+			"request_id", requestID,
+			"operation_type", operationType,
+			"field_name", field.Name,
+			"duration_ms", duration.Milliseconds(),
+			"error", err,
+		)
 		return &mcp.CallToolResult{
 			IsError: true,
 			Content: []mcp.Content{
@@ -179,6 +223,14 @@ func (s *MCPGraphQLServer) executeGraphQLOperation(ctx context.Context, field *s
 		for i, err := range resp.Errors {
 			errorMessages[i] = err.Message
 		}
+		s.logger.Error("GraphQL operation returned errors",
+			"request_id", requestID,
+			"operation_type", operationType,
+			"field_name", field.Name,
+			"duration_ms", duration.Milliseconds(),
+			"error_count", len(resp.Errors),
+			"errors", errorMessages,
+		)
 		return &mcp.CallToolResult{
 			IsError: true,
 			Content: []mcp.Content{
@@ -192,6 +244,13 @@ func (s *MCPGraphQLServer) executeGraphQLOperation(ctx context.Context, field *s
 	// Convert response to JSON string
 	jsonData, err := json.MarshalIndent(resp.Data, "", "  ")
 	if err != nil {
+		s.logger.Error("Failed to marshal GraphQL response",
+			"request_id", requestID,
+			"operation_type", operationType,
+			"field_name", field.Name,
+			"duration_ms", duration.Milliseconds(),
+			"error", err,
+		)
 		return &mcp.CallToolResult{
 			IsError: true,
 			Content: []mcp.Content{
@@ -201,6 +260,15 @@ func (s *MCPGraphQLServer) executeGraphQLOperation(ctx context.Context, field *s
 			},
 		}, nil
 	}
+
+	// Log successful completion
+	s.logger.Info("Tool call completed successfully",
+		"request_id", requestID,
+		"operation_type", operationType,
+		"field_name", field.Name,
+		"duration_ms", duration.Milliseconds(),
+		"response_size_bytes", len(jsonData),
+	)
 
 	return &mcp.CallToolResult{
 		IsError: false,
@@ -215,6 +283,11 @@ func (s *MCPGraphQLServer) executeGraphQLOperation(ctx context.Context, field *s
 // GetMCPServer returns the underlying MCP server
 func (s *MCPGraphQLServer) GetMCPServer() *mcp.Server {
 	return s.mcpServer
+}
+
+// SetLogger sets a custom logger for the server
+func (s *MCPGraphQLServer) SetLogger(logger *slog.Logger) {
+	s.logger = logger
 }
 
 // RefreshSchema re-introspects the GraphQL schema and updates tools

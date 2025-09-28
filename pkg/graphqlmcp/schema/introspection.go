@@ -264,7 +264,15 @@ func parseTypeRefToAST(data map[string]interface{}) (*ast.Type, error) {
 			if err != nil {
 				return nil, err
 			}
-			// Create a non-null wrapper around the inner type
+			// For NON_NULL, we need to check if the inner type is a named type
+			// If it is, we should set NamedType directly instead of Elem
+			if innerType.NamedType != "" {
+				return &ast.Type{
+					NonNull:   true,
+					NamedType: innerType.NamedType,
+				}, nil
+			}
+			// For complex types (lists, etc.), use Elem
 			return &ast.Type{
 				NonNull: true,
 				Elem:    innerType,

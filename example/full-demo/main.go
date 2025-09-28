@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -24,6 +25,10 @@ var (
 )
 
 func main() {
+	// Configure structured logging
+	logger := graphqlmcp.ConfigureVerboseLogging()
+	logger.Info("Starting MCP GraphQL server with verbose logging")
+
 	// Create context with cancellation tied to OS signals
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -159,13 +164,16 @@ func startMCPServer(ctx context.Context) {
 
 func getOrCreateMCPServer() (*graphqlmcp.MCPGraphQLServer, error) {
 	mcpServerOnce.Do(func() {
-		log.Println("Creating MCP server...")
+		logger := slog.Default()
+		logger.Info("Creating MCP server...")
 		graphqlURL := "http://localhost:8080/query"
 		mcpServer, mcpServerErr = graphqlmcp.NewMCPGraphQLServer(graphqlURL)
 		if mcpServerErr != nil {
-			log.Printf("Failed to create MCP server: %v", mcpServerErr)
+			logger.Error("Failed to create MCP server", "error", mcpServerErr)
 		} else {
-			log.Println("MCP server created successfully")
+			logger.Info("MCP server created successfully")
+			// Set the logger on the server for tool call logging
+			mcpServer.SetLogger(logger)
 		}
 	})
 	return mcpServer, mcpServerErr
