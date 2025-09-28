@@ -84,14 +84,11 @@ See the `example/` directory for complete working examples:
 ### Running the Complete Demo
 
 ```bash
-# Run the complete demo (starts GraphQL server, MCP server, and client)
-make demo
-
-# Or run step by step:
-make run-graphql  # Terminal 1: Start GraphQL server
-make run-mcp      # Terminal 2: Start MCP server  
-make run-full-demo # Terminal 3: Run client demo
+# Run the complete demo (standalone application)
+make run-demo
 ```
+
+The `run-full-demo` application is a standalone demo that runs everything in one process - you don't need to run separate services.
 
 ## Development
 

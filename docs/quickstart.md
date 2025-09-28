@@ -85,17 +85,20 @@ func main() {
 
 ## Running the Complete Demo
 
-The project includes a complete working example with a GraphQL server:
+The project includes a complete working example that runs everything in one application:
 
 ```bash
-# Run the complete demo (starts GraphQL server, MCP server, and client)
-make demo
-
-# Or run step by step:
-make run-graphql  # Terminal 1: Start GraphQL server
-make run-mcp      # Terminal 2: Start MCP server  
-make run-full-demo # Terminal 3: Run client demo
+# Run the complete demo (runs full-demo application)
+make run-demo
 ```
+
+The `run-full-demo` application is a standalone demo that:
+- Starts its own GraphQL server
+- Creates an MCP server
+- Runs the client demo
+- All in one process
+
+**Note**: `run-full-demo` is mutually exclusive with `run-graphql` and `run-mcp` - you don't need to run them separately.
 
 ## Testing Your Setup
 

@@ -79,16 +79,12 @@ run-client: ## Start the client
 	@cd $(CLIENT_DIR) && go run .
 
 # Run full demo
-run-demo: ## Run the complete demo (GraphQL + Client + Demo)
+run-demo: ## Run the complete demo (full-demo application)
 	@echo "$(GREEN)[INFO]$(NC) Starting complete demo..."
-	@echo "$(YELLOW)[INFO]$(NC) This will start:"
-	@echo "  - GraphQL server on port $(GRAPHQL_PORT)"
-	@echo "  - Client application"
-	@echo "  - Full demo application"
+	@echo "$(YELLOW)[INFO]$(NC) This will run the full-demo application"
+	@echo "$(YELLOW)[INFO]$(NC) Press Ctrl+C to stop"
 	@echo ""
-	@echo "$(YELLOW)[INFO]$(NC) Press Ctrl+C to stop all services"
-	@echo ""
-	@$(MAKE) -j3 run-graphql run-client run-full-demo
+	@$(MAKE) run-full-demo
 
 # Run full demo application
 run-full-demo: ## Run the full demo application
