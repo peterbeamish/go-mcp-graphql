@@ -2976,6 +2976,9 @@ input AddAssociateInput {
   
   """Date when the associate joined (ISO 8601 format)"""
   joinedAt: String!
+
+  """ training required """
+  trainingRequired: Boolean = true
 }
 `, BuiltIn: false},
 }
@@ -10912,7 +10915,11 @@ func (ec *executionContext) unmarshalInputAddAssociateInput(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "email", "phone", "jobTitle", "department", "reportsToId", "joinedAt"}
+	if _, present := asMap["trainingRequired"]; !present {
+		asMap["trainingRequired"] = true
+	}
+
+	fieldsInOrder := [...]string{"name", "email", "phone", "jobTitle", "department", "reportsToId", "joinedAt", "trainingRequired"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -10968,6 +10975,13 @@ func (ec *executionContext) unmarshalInputAddAssociateInput(ctx context.Context,
 				return it, err
 			}
 			it.JoinedAt = data
+		case "trainingRequired":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("trainingRequired"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TrainingRequired = data
 		}
 	}
 

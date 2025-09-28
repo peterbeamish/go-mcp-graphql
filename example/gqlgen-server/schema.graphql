@@ -1416,4 +1416,7 @@ input AddAssociateInput {
   
   """Date when the associate joined (ISO 8601 format)"""
   joinedAt: String!
+
+  """ training required """
+  trainingRequired: Boolean = true
 }
