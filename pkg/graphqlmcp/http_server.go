@@ -7,34 +7,34 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// Note: We now use the MCP SDK's built-in StreamableHTTPHandler
+// HTTP handler functions for MCP GraphQL server endpoints
+// These functions provide individual handlers that can be registered on any http.ServeMux
+
+// GetMCPHandler returns the MCP endpoint handler using the MCP SDK's StreamableHTTPHandler
 // which handles all the HTTP transport details including SSE support
-
-// StartHTTPServer starts an HTTP server with the MCP GraphQL server
-func GetMux(server *MCPGraphQLServer) *http.ServeMux {
-	// Create a mux for routing
-	mux := http.NewServeMux()
-
-	// MCP endpoint using the streamable handler
-	mcpHandler := mcp.NewStreamableHTTPHandler(
+func GetMCPHandler(server *MCPGraphQLServer) http.Handler {
+	return mcp.NewStreamableHTTPHandler(
 		func(r *http.Request) *mcp.Server {
 			return server.GetMCPServer()
 		},
 		nil,
 	)
-	mux.Handle("/mcp", mcpHandler)
+}
 
-	// Add a health check endpoint
-	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+// GetHealthHandler returns a health check endpoint handler
+func GetHealthHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{
 			"status":  "healthy",
 			"service": "graphql-mcp-server",
 		})
-	})
+	}
+}
 
-	// Add a schema endpoint to view the GraphQL schema
-	mux.HandleFunc("/schema", func(w http.ResponseWriter, r *http.Request) {
+// GetSchemaHandler returns a schema endpoint handler to view the GraphQL schema
+func GetSchemaHandler(server *MCPGraphQLServer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		schema := server.GetSchema()
 		response := map[string]interface{}{
@@ -42,10 +42,12 @@ func GetMux(server *MCPGraphQLServer) *http.ServeMux {
 			"sdl":    schema.GetSchemaSDL(),
 		}
 		json.NewEncoder(w).Encode(response)
-	})
+	}
+}
 
-	// Add a tools endpoint to list available MCP tools
-	mux.HandleFunc("/tools", func(w http.ResponseWriter, r *http.Request) {
+// GetToolsHandler returns a tools endpoint handler to list available MCP tools
+func GetToolsHandler(server *MCPGraphQLServer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
 		// Get available tools from the schema
@@ -80,7 +82,19 @@ func GetMux(server *MCPGraphQLServer) *http.ServeMux {
 			"tools": tools,
 			"count": len(tools),
 		})
-	})
+	}
+}
+
+// GetCompleteMux returns a complete http.ServeMux with all MCP GraphQL server endpoints
+// This is a convenience function that registers all handlers on a new mux
+func GetCompleteMux(server *MCPGraphQLServer) *http.ServeMux {
+	mux := http.NewServeMux()
+
+	// Register all handlers
+	mux.Handle("/mcp", GetMCPHandler(server))
+	mux.HandleFunc("/health", GetHealthHandler())
+	mux.HandleFunc("/schema", GetSchemaHandler(server))
+	mux.HandleFunc("/tools", GetToolsHandler(server))
 
 	return mux
 }

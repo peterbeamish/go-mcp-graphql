@@ -124,10 +124,16 @@ func startMCPServer(ctx context.Context) {
 		log.Fatalf("Failed to create MCP server: %v", err)
 	}
 
-	// Create MCP HTTP server
+	// Create MCP HTTP server with individual handlers
+	mcpMux := http.NewServeMux()
+	mcpMux.Handle("/mcp", graphqlmcp.GetMCPHandler(server))
+	mcpMux.HandleFunc("/health", graphqlmcp.GetHealthHandler())
+	mcpMux.HandleFunc("/schema", graphqlmcp.GetSchemaHandler(server))
+	mcpMux.HandleFunc("/tools", graphqlmcp.GetToolsHandler(server))
+
 	httpServer := &http.Server{
 		Addr:    ":8081",
-		Handler: graphqlmcp.GetMux(server),
+		Handler: mcpMux,
 	}
 	// Start server in background
 	go func() {

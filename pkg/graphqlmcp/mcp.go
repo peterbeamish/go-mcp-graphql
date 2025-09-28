@@ -21,6 +21,7 @@ type MCPGraphQLServer struct {
 }
 
 // NewMCPGraphQLServer creates a new MCP GraphQL server
+// endpoint is the URL of the GraphQL server
 func NewMCPGraphQLServer(endpoint string) (*MCPGraphQLServer, error) {
 	client := NewGraphQLClient(endpoint)
 	return NewMCPGraphQLServerWithExecutor(client)
