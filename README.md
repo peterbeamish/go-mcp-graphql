@@ -25,6 +25,7 @@ package main
 
 import (
     "log"
+    "net/http"
     
     "github.com/peterbeamish/go-mcp-graphql/pkg/graphqlmcp"
 )
@@ -36,9 +37,12 @@ func main() {
         log.Fatal(err)
     }
     
+    // Create HTTP server with all MCP endpoints
+    mux := graphqlmcp.GetCompleteMux(server)
+    
     // Start HTTP server
     log.Println("Starting MCP GraphQL server on :8080")
-    log.Fatal(graphqlmcp.StartHTTPServer(server, ":8080"))
+    log.Fatal(http.ListenAndServe(":8080", mux))
 }
 ```
 
@@ -82,7 +86,7 @@ import (
 
 func main() {
     // Create HTTP client
-    client := graphqlmcp.CreateHTTPClient("http://localhost:8080")
+    client := graphqlmcp.CreateHTTPClient("http://localhost:8081")
     
     ctx := context.Background()
     
@@ -123,11 +127,8 @@ When running as an HTTP server, the following endpoints are available:
 
 See the `example/` directory for complete working examples:
 
-- `example/main.go` - HTTP server with GitHub GraphQL API
-- `example/simple/main.go` - Stdio server with countries API
 - `example/client/main.go` - HTTP client example
 - `example/gqlgen-server/` - Complete gqlgen-based GraphQL server
-- `example/gqlgen-mcp-client/` - MCP client that introspects the gqlgen server
 - `example/full-demo/` - Complete demo showing the full workflow
 - `Makefile` - Comprehensive build and run commands
 
@@ -135,23 +136,31 @@ See the `example/` directory for complete working examples:
 
 ### Authentication
 
-Set custom headers for GraphQL requests:
+Set custom headers for GraphQL requests by creating a custom GraphQL client:
 
 ```go
-server, err := graphqlmcp.NewMCPGraphQLServer("https://api.example.com/graphql")
+// Create a custom GraphQL client with authentication
+client := graphqlmcp.NewGraphQLClient("https://api.example.com/graphql")
+client.SetHeader("Authorization", "Bearer YOUR_TOKEN")
+
+// Create MCP server with the authenticated client
+server, err := graphqlmcp.NewMCPGraphQLServerWithExecutor(client)
 if err != nil {
     log.Fatal(err)
 }
-
-// Set authentication header
-server.GetClient().SetHeader("Authorization", "Bearer YOUR_TOKEN")
 ```
 
 ### Custom Timeouts
 
 ```go
-httpServer := graphqlmcp.NewHTTPServer(server.GetMCPServer())
-httpServer.SetTimeout(60 * time.Second)
+// Create HTTP client with custom timeout
+client := &http.Client{
+    Timeout: 60 * time.Second,
+}
+
+// Use with HTTPMCPClient
+mcpClient := graphqlmcp.CreateHTTPClient("http://localhost:8081")
+// Note: HTTPMCPClient uses a 30-second default timeout
 ```
 
 ## Gqlgen Integration Example
@@ -181,14 +190,13 @@ The library includes a complete example using [gqlgen](https://github.com/99desi
    ```bash
    make help              # Show all available commands
    make install           # Install dependencies
-   make install-tools     # Install development tools
    make generate          # Generate gqlgen code
    make build             # Build all components
    make test              # Test all services
    make format            # Format all code
-   make quality-all       # Run all quality checks
+   make lint              # Run linter
    make clean             # Clean build artifacts
-   make status            # Check service status
+   make rebuild           # Clean and rebuild all components
    ```
 
 ### What the Gqlgen Example Includes
@@ -205,15 +213,15 @@ Once running, you can test the MCP tools:
 
 ```bash
 # List available tools
-curl http://localhost:8080/tools
+curl http://localhost:8081/tools
 
 # Test a query tool
-curl -X POST http://localhost:8080/mcp \
+curl -X POST http://localhost:8081/mcp \
   -H "Content-Type: application/json" \
   -d '{"method": "tools/call", "params": {"name": "query_posts", "arguments": {}}}'
 
 # Test a mutation tool
-curl -X POST http://localhost:8080/mcp \
+curl -X POST http://localhost:8081/mcp \
   -H "Content-Type: application/json" \
   -d '{"method": "tools/call", "params": {"name": "mutation_createUser", "arguments": {"input": {"name": "Test User", "email": "test@example.com"}}}}'
 ```
@@ -224,28 +232,24 @@ This project follows modern Go patterns for managing build tools and development
 
 ### Tools Management
 - **go.mod**: Contains all tool dependencies with proper versioning
-- **tools.go**: Manages build tools for the gqlgen server example
 - **Makefile**: Provides convenient commands for all development tasks
 
 ### Available Tools
 - **Code Generation**: gqlgen for GraphQL code generation
-- **Linting**: golangci-lint for comprehensive code analysis
-- **Security**: gosec for security vulnerability scanning
-- **Quality**: errcheck, ineffassign for code quality checks
-- **Formatting**: goimports, gofmt, gci for code formatting
-- **Testing**: testify for testing framework, mockery for mock generation
-- **Development**: air for auto-reload during development
+- **Testing**: testify for testing framework
+- **Formatting**: gofmt for code formatting
 
 ### Quick Development Setup
 ```bash
-# Install all development tools
-make install-tools
+# Install dependencies
+make install
 
 # Format and check code quality
-make quality-all
+make format
+make lint
 
-# Run in development mode with auto-reload
-make dev
+# Run tests
+make test
 ```
 
 ## How It Works
