@@ -27,7 +27,8 @@ This library bridges GraphQL APIs with AI chat sessions by creating an MCP (Mode
 - **MCP Tool Generation**: Converts GraphQL queries and mutations into MCP tools
 - **HTTP Server**: Hosts the MCP server over HTTP for easy integration
 - **Type Safety**: Leverages Go's type system for safe GraphQL operations
-- **Options Pattern**: Configurable with `WithLogger()` and `WithMask()` options
+- **Options Pattern**: Configurable with `WithLogger()`, `WithMask()`, and `WithPassthruHeaders()` options
+- **Header Passthrough**: Automatically pass authentication and tracing headers from MCP requests to GraphQL requests
 - **Advanced GraphQL Support**: Unions, interfaces, complex types, and full schema introspection
 
 ## Installation
@@ -60,6 +61,40 @@ func main() {
     
     // Start HTTP server
     log.Println("Starting MCP GraphQL server on :8080")
+    log.Fatal(http.ListenAndServe(":8080", mux))
+}
+```
+
+### With Authentication (Passthru Headers)
+
+```go
+package main
+
+import (
+    "log"
+    "net/http"
+    
+    "github.com/peterbeamish/go-mcp-graphql/pkg/graphqlmcp"
+)
+
+func main() {
+    // Create a GraphQL MCP server with authentication passthrough
+    server, err := graphqlmcp.NewMCPGraphQLServer("https://api.example.com/graphql",
+        graphqlmcp.WithPassthruHeaders([]string{
+            "Authorization",  // Bearer tokens
+            "X-User-ID",      // User identification  
+            "X-Request-ID",   // Request tracing
+        }),
+    )
+    if err != nil {
+        log.Fatal(err)
+    }
+    
+    // Create HTTP server with all MCP endpoints
+    mux := graphqlmcp.GetCompleteMux(server)
+    
+    // Start HTTP server
+    log.Println("Starting authenticated MCP GraphQL server on :8080")
     log.Fatal(http.ListenAndServe(":8080", mux))
 }
 ```

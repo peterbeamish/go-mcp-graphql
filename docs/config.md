@@ -57,6 +57,136 @@ client.SetHeader("Content-Type", "application/json")
 client.SetHeader("User-Agent", "MyApp/1.0")
 ```
 
+## Header Passthrough
+
+### WithPassthruHeaders Option
+
+The `WithPassthruHeaders` option allows you to automatically pass specific headers from incoming MCP requests to outgoing GraphQL requests. This is useful for authentication, user identification, and request tracing.
+
+```go
+server, err := graphqlmcp.NewMCPGraphQLServer("https://api.example.com/graphql",
+    graphqlmcp.WithPassthruHeaders([]string{
+        "Authorization",  // Pass through bearer tokens
+        "X-User-ID",      // Pass through user identification
+        "X-Request-ID",   // Pass through request tracing
+    }),
+)
+```
+
+### How It Works
+
+1. **Client Request**: Client sends MCP request with headers (e.g., `Authorization: Bearer token`)
+2. **Header Extraction**: Server extracts configured headers from the incoming request
+3. **Context Addition**: Headers are added to the request context
+4. **GraphQL Request**: Headers are automatically included in GraphQL requests
+
+### Common Use Cases
+
+#### Bearer Token Authentication
+
+```go
+server, err := graphqlmcp.NewMCPGraphQLServer("https://api.example.com/graphql",
+    graphqlmcp.WithPassthruHeaders([]string{"Authorization"}),
+)
+```
+
+Client usage:
+```bash
+curl -H "Authorization: Bearer your-jwt-token" \
+     -X POST http://localhost:8081/mcp \
+     -d '{"method":"tools/call","params":{"name":"query_users","arguments":{}}}'
+```
+
+#### User Identification
+
+```go
+server, err := graphqlmcp.NewMCPGraphQLServer("https://api.example.com/graphql",
+    graphqlmcp.WithPassthruHeaders([]string{
+        "Authorization",
+        "X-User-ID",
+        "X-Tenant-ID",
+    }),
+)
+```
+
+#### Request Tracing
+
+```go
+server, err := graphqlmcp.NewMCPGraphQLServer("https://api.example.com/graphql",
+    graphqlmcp.WithPassthruHeaders([]string{
+        "Authorization",
+        "X-Request-ID",
+        "X-Correlation-ID",
+        "X-Trace-ID",
+    }),
+)
+```
+
+### Combined with Other Options
+
+```go
+server, err := graphqlmcp.NewMCPGraphQLServer("https://api.example.com/graphql",
+    graphqlmcp.WithLogger(logger),
+    graphqlmcp.WithMask(allowList, blockList),
+    graphqlmcp.WithPassthruHeaders([]string{
+        "Authorization",
+        "X-User-ID",
+        "X-Request-ID",
+    }),
+)
+```
+
+### Security Considerations
+
+- **Validate Headers**: Ensure your GraphQL server validates incoming headers
+- **Sensitive Data**: Be careful with headers containing sensitive information
+- **Header Injection**: The library only passes through configured headers, preventing header injection
+- **Case Sensitivity**: Header names are case-sensitive in HTTP, use exact matches
+
+### Example: Complete Authentication Setup
+
+```go
+package main
+
+import (
+    "log"
+    "log/slog"
+    "net/http"
+    
+    "github.com/peterbeamish/go-mcp-graphql/pkg/graphqlmcp"
+)
+
+func main() {
+    // Create server with passthru headers for authentication
+    server, err := graphqlmcp.NewMCPGraphQLServer("https://api.example.com/graphql",
+        graphqlmcp.WithLogger(slog.Default()),
+        graphqlmcp.WithPassthruHeaders([]string{
+            "Authorization",    // Bearer token
+            "X-User-ID",        // User identification
+            "X-Request-ID",     // Request tracing
+            "X-Client-Version", // Client version info
+        }),
+    )
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    // Set up HTTP server
+    mux := graphqlmcp.GetCompleteMux(server)
+    http.ListenAndServe(":8081", mux)
+}
+```
+
+Client test:
+```bash
+curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+     -H "X-User-ID: user123" \
+     -H "X-Request-ID: req-456" \
+     -H "X-Client-Version: 1.2.3" \
+     -X POST http://localhost:8081/mcp \
+     -d '{"method":"tools/call","params":{"name":"query_profile","arguments":{"userId":"user123"}}}'
+```
+
 ## Logging
 
 ### Custom Logger

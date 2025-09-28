@@ -125,8 +125,9 @@ func startMCPServer(ctx context.Context) {
 	}
 
 	// Create MCP HTTP server with individual handlers
+
 	mcpMux := http.NewServeMux()
-	mcpMux.Handle("/mcp", graphqlmcp.GetMCPHandler(server))
+	mcpMux.HandleFunc("/mcp", graphqlmcp.NewMCPHandler(server).ServeHTTP)
 	mcpMux.HandleFunc("/health", graphqlmcp.GetHealthHandler())
 	mcpMux.HandleFunc("/schema", graphqlmcp.GetSchemaHandler(server))
 	mcpMux.HandleFunc("/tools", graphqlmcp.GetToolsHandler(server))
