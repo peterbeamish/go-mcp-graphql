@@ -13,6 +13,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/go-logr/logr"
 	"github.com/peterbeamish/go-mcp-graphql/example/gqlgen-server/graphql"
 	"github.com/peterbeamish/go-mcp-graphql/example/gqlgen-server/resolver"
 	"github.com/peterbeamish/go-mcp-graphql/pkg/graphqlmcp"
@@ -180,7 +181,13 @@ func getOrCreateMCPServer() (*graphqlmcp.MCPGraphQLServer, error) {
 		} else {
 			logger.Info("MCP server created successfully")
 			// Set the logger on the server for tool call logging
-			mcpServer.SetLogger(logger)
+			ctx := logr.NewContextWithSlogLogger(context.Background(), logger)
+
+			logrLogger, err := logr.FromContext(ctx)
+			if err != nil {
+				logger.Error("Failed to get logr logger", "error", err)
+			}
+			mcpServer.SetLogger(logrLogger)
 		}
 	})
 	return mcpServer, mcpServerErr

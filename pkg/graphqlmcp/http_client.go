@@ -6,9 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/go-logr/logr"
 )
 
 // MCPRequest represents an MCP request over HTTP
@@ -36,7 +37,7 @@ type MCPError struct {
 type HTTPMCPClient struct {
 	baseURL string
 	client  *http.Client
-	logger  *slog.Logger
+	logger  logr.Logger
 }
 
 // CreateHTTPClient creates an HTTP client for communicating with the MCP server
@@ -44,12 +45,12 @@ func CreateHTTPClient(baseURL string) *HTTPMCPClient {
 	return &HTTPMCPClient{
 		baseURL: baseURL,
 		client:  &http.Client{Timeout: 30 * time.Second},
-		logger:  slog.Default(),
+		logger:  logr.Discard(),
 	}
 }
 
 // SetLogger sets a custom logger for the HTTP client
-func (c *HTTPMCPClient) SetLogger(logger *slog.Logger) {
+func (c *HTTPMCPClient) SetLogger(logger logr.Logger) {
 	c.logger = logger
 }
 
@@ -76,20 +77,18 @@ func (c *HTTPMCPClient) CallTool(ctx context.Context, toolName string, arguments
 
 	jsonData, err := json.Marshal(request)
 	if err != nil {
-		c.logger.Error("Failed to marshal HTTP request",
+		c.logger.Error(err, "Failed to marshal HTTP request",
 			"request_id", requestID,
 			"tool_name", toolName,
-			"error", err,
 		)
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "POST", c.baseURL+"/mcp", bytes.NewBuffer(jsonData))
 	if err != nil {
-		c.logger.Error("Failed to create HTTP request",
+		c.logger.Error(err, "Failed to create HTTP request",
 			"request_id", requestID,
 			"tool_name", toolName,
-			"error", err,
 		)
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -97,7 +96,7 @@ func (c *HTTPMCPClient) CallTool(ctx context.Context, toolName string, arguments
 	req.Header.Set("Content-Type", "application/json")
 
 	// Log the HTTP request details
-	c.logger.Debug("Sending HTTP request",
+	c.logger.V(1).Info("Sending HTTP request",
 		"request_id", requestID,
 		"tool_name", toolName,
 		"url", req.URL.String(),
@@ -110,11 +109,10 @@ func (c *HTTPMCPClient) CallTool(ctx context.Context, toolName string, arguments
 	duration := time.Since(startTime)
 
 	if err != nil {
-		c.logger.Error("HTTP request execution failed",
+		c.logger.Error(err, "HTTP request execution failed",
 			"request_id", requestID,
 			"tool_name", toolName,
 			"duration_ms", duration.Milliseconds(),
-			"error", err,
 		)
 		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
@@ -122,18 +120,17 @@ func (c *HTTPMCPClient) CallTool(ctx context.Context, toolName string, arguments
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		c.logger.Error("Failed to read HTTP response body",
+		c.logger.Error(err, "Failed to read HTTP response body",
 			"request_id", requestID,
 			"tool_name", toolName,
 			"duration_ms", duration.Milliseconds(),
 			"status_code", resp.StatusCode,
-			"error", err,
 		)
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		c.logger.Error("HTTP request failed with non-OK status",
+		c.logger.Info("HTTP request failed with non-OK status",
 			"request_id", requestID,
 			"tool_name", toolName,
 			"duration_ms", duration.Milliseconds(),
@@ -145,12 +142,11 @@ func (c *HTTPMCPClient) CallTool(ctx context.Context, toolName string, arguments
 
 	var mcpResp MCPResponse
 	if err := json.Unmarshal(body, &mcpResp); err != nil {
-		c.logger.Error("Failed to unmarshal HTTP response",
+		c.logger.Error(err, "Failed to unmarshal HTTP response",
 			"request_id", requestID,
 			"tool_name", toolName,
 			"duration_ms", duration.Milliseconds(),
 			"response_size_bytes", len(body),
-			"error", err,
 		)
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
@@ -178,9 +174,8 @@ func (c *HTTPMCPClient) ListTools(ctx context.Context) ([]map[string]interface{}
 
 	req, err := http.NewRequestWithContext(ctx, "GET", c.baseURL+"/tools", nil)
 	if err != nil {
-		c.logger.Error("Failed to create tools list request",
+		c.logger.Error(err, "Failed to create tools list request",
 			"request_id", requestID,
-			"error", err,
 		)
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -190,10 +185,9 @@ func (c *HTTPMCPClient) ListTools(ctx context.Context) ([]map[string]interface{}
 	duration := time.Since(startTime)
 
 	if err != nil {
-		c.logger.Error("Failed to execute tools list request",
+		c.logger.Error(err, "Failed to execute tools list request",
 			"request_id", requestID,
 			"duration_ms", duration.Milliseconds(),
-			"error", err,
 		)
 		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
@@ -201,17 +195,16 @@ func (c *HTTPMCPClient) ListTools(ctx context.Context) ([]map[string]interface{}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		c.logger.Error("Failed to read tools list response",
+		c.logger.Error(err, "Failed to read tools list response",
 			"request_id", requestID,
 			"duration_ms", duration.Milliseconds(),
 			"status_code", resp.StatusCode,
-			"error", err,
 		)
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		c.logger.Error("Tools list request failed with non-OK status",
+		c.logger.Info("Tools list request failed with non-OK status",
 			"request_id", requestID,
 			"duration_ms", duration.Milliseconds(),
 			"status_code", resp.StatusCode,
@@ -222,18 +215,17 @@ func (c *HTTPMCPClient) ListTools(ctx context.Context) ([]map[string]interface{}
 
 	var result map[string]interface{}
 	if err := json.Unmarshal(body, &result); err != nil {
-		c.logger.Error("Failed to unmarshal tools list response",
+		c.logger.Error(err, "Failed to unmarshal tools list response",
 			"request_id", requestID,
 			"duration_ms", duration.Milliseconds(),
 			"response_size_bytes", len(body),
-			"error", err,
 		)
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
 	tools, ok := result["tools"].([]interface{})
 	if !ok {
-		c.logger.Error("Invalid tools response format",
+		c.logger.Info("Invalid tools response format",
 			"request_id", requestID,
 			"duration_ms", duration.Milliseconds(),
 			"response", result,
