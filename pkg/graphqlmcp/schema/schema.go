@@ -121,3 +121,62 @@ func (s *Schema) GetInterfaceFields(interfaceName string) []*Field {
 
 	return fields
 }
+
+// GetUnions returns all union types in the schema
+func (s *Schema) GetUnions() []*Type {
+	if s.parsedSchema == nil {
+		return nil
+	}
+
+	var unions []*Type
+	for _, typeDef := range s.parsedSchema.Types {
+		if typeDef != nil && typeDef.Kind == ast.Union && !isBuiltinType(typeDef.Name) && !isIntrospectionType(typeDef.Name) {
+			unions = append(unions, convertASTToType(typeDef))
+		}
+	}
+	return unions
+}
+
+// GetUnionPossibleTypes returns all possible types for a given union
+func (s *Schema) GetUnionPossibleTypes(unionName string) []*Type {
+	if s.parsedSchema == nil {
+		return nil
+	}
+
+	typeDef := s.GetTypeDefinition(unionName)
+	if typeDef == nil || typeDef.Kind != ast.Union {
+		return nil
+	}
+
+	var possibleTypes []*Type
+	for _, possibleTypeName := range typeDef.Types {
+		if possibleTypeDef := s.GetTypeDefinition(possibleTypeName); possibleTypeDef != nil {
+			possibleTypes = append(possibleTypes, convertASTToType(possibleTypeDef))
+		}
+	}
+	return possibleTypes
+}
+
+// IsUnionType checks if a type is a union
+func (s *Schema) IsUnionType(typeName string) bool {
+	if s.parsedSchema == nil {
+		return false
+	}
+
+	typeDef := s.GetTypeDefinition(typeName)
+	return typeDef != nil && typeDef.Kind == ast.Union
+}
+
+// GetUnionByName returns a union type by name
+func (s *Schema) GetUnionByName(unionName string) *Type {
+	if s.parsedSchema == nil {
+		return nil
+	}
+
+	typeDef := s.GetTypeDefinition(unionName)
+	if typeDef == nil || typeDef.Kind != ast.Union {
+		return nil
+	}
+
+	return convertASTToType(typeDef)
+}

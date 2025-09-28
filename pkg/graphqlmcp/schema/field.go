@@ -283,15 +283,29 @@ func (f *Field) generateSelectionSetForTypeWithVisited(typeDef *ast.Definition, 
 			fields = append(fields, "__typename")
 		}
 	case ast.Union:
-		// For unions, select common fields from all possible types
+		// For unions, we need to use inline fragments for each possible type
+		// Add __typename for type discrimination
+		fields = append(fields, "__typename")
+
+		// Generate inline fragments for each possible type
 		for _, possibleType := range typeDef.Types {
 			if possibleTypeDef := schema.GetTypeDefinition(possibleType); possibleTypeDef != nil {
-				unionFields, err := f.generateSelectionSetForTypeWithVisited(possibleTypeDef, schema, depth+1, visited, originalType)
+				// Generate selection set for this possible type
+				possibleTypeFields, err := f.generateSelectionSetForTypeWithVisited(possibleTypeDef, schema, depth+1, visited, originalType)
 				if err != nil {
 					return "", fmt.Errorf("failed to generate union fields for %s: %w", possibleType, err)
 				}
-				if unionFields != "" {
-					fields = append(fields, unionFields)
+
+				// Create inline fragment for this possible type
+				if possibleTypeFields != "" {
+					// Add field aliases to prevent conflicts between union member types
+					aliasedFields := f.addFieldAliases(possibleTypeFields, possibleType)
+					fragment := fmt.Sprintf("... on %s {\n      %s\n    }", possibleType, strings.ReplaceAll(aliasedFields, "\n    ", "\n      "))
+					fields = append(fields, fragment)
+				} else {
+					// If no fields, just add the type name for basic identification
+					fragment := fmt.Sprintf("... on %s {\n      __typename\n    }", possibleType)
+					fields = append(fields, fragment)
 				}
 			}
 		}
@@ -422,4 +436,64 @@ func (f *Field) shouldIncludeFieldInInterface(field *ast.FieldDefinition) bool {
 	}
 
 	return true
+}
+
+// addFieldAliases adds aliases to fields that might conflict between union member types
+func (f *Field) addFieldAliases(fields string, typeName string) string {
+	// Common fields that often conflict between union member types
+	conflictFields := map[string]bool{
+		"type":     true,
+		"status":   true,
+		"priority": true,
+		"severity": true,
+		"level":    true,
+		"kind":     true,
+		"category": true,
+	}
+
+	lines := strings.Split(fields, "\n")
+	var result []string
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			result = append(result, line)
+			continue
+		}
+
+		// Check if this line contains a field that might conflict
+		fieldName := f.extractFieldName(trimmed)
+		if conflictFields[fieldName] {
+			// Add alias with type prefix
+			aliasedLine := strings.Replace(trimmed, fieldName, fmt.Sprintf("%s_%s: %s", typeName, fieldName, fieldName), 1)
+			result = append(result, aliasedLine)
+		} else {
+			result = append(result, line)
+		}
+	}
+
+	return strings.Join(result, "\n")
+}
+
+// extractFieldName extracts the field name from a GraphQL field selection line
+func (f *Field) extractFieldName(line string) string {
+	// Remove leading whitespace
+	line = strings.TrimSpace(line)
+
+	// Handle field with subselection (e.g., "fieldName { ... }")
+	if idx := strings.Index(line, " {"); idx != -1 {
+		return line[:idx]
+	}
+
+	// Handle field with alias (e.g., "alias: fieldName")
+	if idx := strings.Index(line, ": "); idx != -1 {
+		return strings.TrimSpace(line[idx+2:])
+	}
+
+	// Handle simple field name
+	if idx := strings.Index(line, " "); idx != -1 {
+		return line[:idx]
+	}
+
+	return line
 }
