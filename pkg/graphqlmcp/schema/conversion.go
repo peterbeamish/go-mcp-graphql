@@ -38,6 +38,12 @@ func convertASTToType(astDef *ast.Definition) *Type {
 				Description: astArg.Description,
 				Type:        ConvertTypeFromAST(astArg.Type),
 			}
+
+			// Copy default value if present
+			if astArg.DefaultValue != nil {
+				arg.DefaultValue = astArg.DefaultValue.Raw
+			}
+
 			field.Args = append(field.Args, arg)
 		}
 
