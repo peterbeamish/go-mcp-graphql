@@ -12,7 +12,7 @@ import (
 
 // MCPGraphQLServer represents an MCP server that provides GraphQL tools
 type MCPGraphQLServer struct {
-	client    *GraphQLClient
+	executor  GraphQLExecutor
 	Schema    *schema.Schema
 	mcpServer *mcp.Server
 }
@@ -20,10 +20,14 @@ type MCPGraphQLServer struct {
 // NewMCPGraphQLServer creates a new MCP GraphQL server
 func NewMCPGraphQLServer(endpoint string) (*MCPGraphQLServer, error) {
 	client := NewGraphQLClient(endpoint)
+	return NewMCPGraphQLServerWithExecutor(client)
+}
 
+// NewMCPGraphQLServerWithExecutor creates a new MCP GraphQL server with a custom executor
+func NewMCPGraphQLServerWithExecutor(executor GraphQLExecutor) (*MCPGraphQLServer, error) {
 	// Introspect the schema
 	ctx := context.Background()
-	schema, err := client.IntrospectSchema(ctx)
+	schema, err := executor.IntrospectSchema(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to introspect GraphQL schema: %w", err)
 	}
@@ -37,7 +41,7 @@ func NewMCPGraphQLServer(endpoint string) (*MCPGraphQLServer, error) {
 	}, nil)
 
 	server := &MCPGraphQLServer{
-		client:    client,
+		executor:  executor,
 		Schema:    schema,
 		mcpServer: mcpServer,
 	}
@@ -157,7 +161,7 @@ func (s *MCPGraphQLServer) executeGraphQLOperation(ctx context.Context, field *s
 	}
 
 	// Execute the GraphQL operation
-	resp, err := s.client.ExecuteQuery(ctx, queryString, input)
+	resp, err := s.executor.ExecuteQuery(ctx, queryString, input)
 	if err != nil {
 		return &mcp.CallToolResult{
 			IsError: true,
@@ -216,7 +220,7 @@ func (s *MCPGraphQLServer) GetMCPServer() *mcp.Server {
 // RefreshSchema re-introspects the GraphQL schema and updates tools
 func (s *MCPGraphQLServer) RefreshSchema() error {
 	ctx := context.Background()
-	schema, err := s.client.IntrospectSchema(ctx)
+	schema, err := s.executor.IntrospectSchema(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to refresh GraphQL schema: %w", err)
 	}
@@ -244,7 +248,7 @@ func (s *MCPGraphQLServer) GetSchema() *schema.Schema {
 	return s.Schema
 }
 
-// GetClient returns the GraphQL client
-func (s *MCPGraphQLServer) GetClient() *GraphQLClient {
-	return s.client
+// GetExecutor returns the GraphQL executor
+func (s *MCPGraphQLServer) GetExecutor() GraphQLExecutor {
+	return s.executor
 }
