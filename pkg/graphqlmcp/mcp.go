@@ -37,11 +37,17 @@ func NewMCPGraphQLServerWithExecutor(executor GraphQLExecutor, opts ...MCPGraphQ
 		opt(options)
 	}
 
+	// Set logger - use provided logger or default
+	logger := options.Logger
+	if logger.GetSink() == nil {
+		logger = logr.Discard()
+	}
+
 	// Introspect the schema
 	ctx := context.Background()
 	schema, err := executor.IntrospectSchema(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to introspect GraphQL schema: %w", err)
+		logger.Info("Failed to introspect GraphQL schema, continuing with empty schema", "error", err)
 	}
 
 	// Schema is already parsed from introspection, no need to re-parse from SDL
@@ -52,12 +58,6 @@ func NewMCPGraphQLServerWithExecutor(executor GraphQLExecutor, opts ...MCPGraphQ
 		Version: "1.0.0",
 	}, nil)
 
-	// Set logger - use provided logger or default
-	logger := options.Logger
-	if logger.GetSink() == nil {
-		logger = logr.Discard()
-	}
-
 	server := &MCPGraphQLServer{
 		executor:  executor,
 		Schema:    schema,
@@ -67,8 +67,12 @@ func NewMCPGraphQLServerWithExecutor(executor GraphQLExecutor, opts ...MCPGraphQ
 	}
 
 	// Add tools for queries and mutations
-	if err := server.addGraphQLTools(); err != nil {
-		return nil, fmt.Errorf("failed to add GraphQL tools: %w", err)
+	if server.Schema != nil {
+		if err := server.addGraphQLTools(); err != nil {
+			return nil, fmt.Errorf("failed to add GraphQL tools: %w", err)
+		}
+	} else {
+		logger.Info("No schema introspected, skipping tool creation")
 	}
 
 	return server, nil
