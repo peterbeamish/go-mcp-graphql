@@ -134,7 +134,7 @@ type MCPError struct {
 }
 
 // StartHTTPServer starts an HTTP server with the MCP GraphQL server
-func StartHTTPServer(server *MCPGraphQLServer, addr string) error {
+func GetMux(server *MCPGraphQLServer) *http.ServeMux {
 	// Create a mux for routing
 	mux := http.NewServeMux()
 
@@ -201,7 +201,7 @@ func StartHTTPServer(server *MCPGraphQLServer, addr string) error {
 		})
 	})
 
-	return http.ListenAndServe(addr, mux)
+	return mux
 }
 
 // CreateHTTPClient creates an HTTP client for communicating with the MCP server
