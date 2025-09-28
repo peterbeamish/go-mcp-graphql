@@ -18,17 +18,24 @@ type MCPGraphQLServer struct {
 	Schema    *schema.Schema
 	mcpServer *mcp.Server
 	logger    *slog.Logger
+	options   *MCPGraphQLServerOptions
 }
 
 // NewMCPGraphQLServer creates a new MCP GraphQL server
 // endpoint is the URL of the GraphQL server
-func NewMCPGraphQLServer(endpoint string) (*MCPGraphQLServer, error) {
+func NewMCPGraphQLServer(endpoint string, opts ...MCPGraphQLServerOption) (*MCPGraphQLServer, error) {
 	client := NewGraphQLClient(endpoint)
-	return NewMCPGraphQLServerWithExecutor(client)
+	return NewMCPGraphQLServerWithExecutor(client, opts...)
 }
 
 // NewMCPGraphQLServerWithExecutor creates a new MCP GraphQL server with a custom executor
-func NewMCPGraphQLServerWithExecutor(executor GraphQLExecutor) (*MCPGraphQLServer, error) {
+func NewMCPGraphQLServerWithExecutor(executor GraphQLExecutor, opts ...MCPGraphQLServerOption) (*MCPGraphQLServer, error) {
+	// Apply options
+	options := NewMCPGraphQLServerOptions()
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	// Introspect the schema
 	ctx := context.Background()
 	schema, err := executor.IntrospectSchema(ctx)
@@ -44,11 +51,18 @@ func NewMCPGraphQLServerWithExecutor(executor GraphQLExecutor) (*MCPGraphQLServe
 		Version: "1.0.0",
 	}, nil)
 
+	// Set logger - use provided logger or default
+	logger := options.Logger
+	if logger == nil {
+		logger = slog.Default()
+	}
+
 	server := &MCPGraphQLServer{
 		executor:  executor,
 		Schema:    schema,
 		mcpServer: mcpServer,
-		logger:    slog.Default(),
+		logger:    logger,
+		options:   options,
 	}
 
 	// Add tools for queries and mutations
@@ -64,6 +78,12 @@ func (s *MCPGraphQLServer) addGraphQLTools() error {
 	// Add query tools
 	queries := s.Schema.GetQueries()
 	for _, query := range queries {
+		// Check if this query is allowed based on masking options
+		if !s.options.isOperationAllowed(query.Name) {
+			s.logger.Debug("Skipping query due to masking rules", "query_name", query.Name)
+			continue
+		}
+
 		if err := s.addQueryTool(query); err != nil {
 			return fmt.Errorf("failed to add query tool for %s: %w", query.Name, err)
 		}
@@ -72,6 +92,12 @@ func (s *MCPGraphQLServer) addGraphQLTools() error {
 	// Add mutation tools
 	mutations := s.Schema.GetMutations()
 	for _, mutation := range mutations {
+		// Check if this mutation is allowed based on masking options
+		if !s.options.isOperationAllowed(mutation.Name) {
+			s.logger.Debug("Skipping mutation due to masking rules", "mutation_name", mutation.Name)
+			continue
+		}
+
 		if err := s.addMutationTool(mutation); err != nil {
 			return fmt.Errorf("failed to add mutation tool for %s: %w", mutation.Name, err)
 		}
@@ -309,7 +335,7 @@ func (s *MCPGraphQLServer) RefreshSchema() error {
 
 	s.mcpServer = mcpServer
 
-	// Add tools for queries and mutations
+	// Add tools for queries and mutations (respecting masking options)
 	if err := s.addGraphQLTools(); err != nil {
 		return fmt.Errorf("failed to add GraphQL tools after refresh: %w", err)
 	}
