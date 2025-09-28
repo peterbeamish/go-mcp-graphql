@@ -9,116 +9,69 @@ import (
 
 // GenerateQueryStringWithSchema generates a GraphQL query string for a field with schema context
 func (f *Field) GenerateQueryStringWithSchema(schema *Schema) (string, error) {
-	if schema == nil {
-		return "", fmt.Errorf("schema is nil")
-	}
-
-	var query strings.Builder
-
-	// Start with the query keyword and variable declarations
-	query.WriteString("query")
-	if len(f.Args) > 0 {
-		query.WriteString("(")
-		for i, arg := range f.Args {
-			if i > 0 {
-				query.WriteString(", ")
-			}
-			query.WriteString("$")
-			query.WriteString(arg.Name)
-			query.WriteString(": ")
-			query.WriteString(arg.Type.GetTypeName())
-			if arg.Type.IsNonNull() {
-				query.WriteString("!")
-			}
-		}
-		query.WriteString(")")
-	}
-	query.WriteString(" {\n  ")
-	query.WriteString(f.Name)
-
-	// Add field arguments (using variables)
-	if len(f.Args) > 0 {
-		query.WriteString("(")
-		for i, arg := range f.Args {
-			if i > 0 {
-				query.WriteString(", ")
-			}
-			query.WriteString(arg.Name)
-			query.WriteString(": $")
-			query.WriteString(arg.Name)
-		}
-		query.WriteString(")")
-	}
-
-	// Add selection set based on the return type
-	query.WriteString(" {\n    ")
-
-	selectionSet, err := f.generateSelectionSetFromAST(schema)
-	if err != nil {
-		return "", fmt.Errorf("failed to generate selection set: %w", err)
-	}
-	query.WriteString(selectionSet)
-
-	query.WriteString("\n  }\n}")
-
-	return query.String(), nil
+	return f.generateOperationString(schema, "query")
 }
 
-// GenerateMutationString generates a GraphQL mutation string for a field
+// GenerateMutationStringWithSchema generates a GraphQL mutation string for a field
 func (f *Field) GenerateMutationStringWithSchema(schema *Schema) (string, error) {
+	return f.generateOperationString(schema, "mutation")
+}
+
+// generateOperationString generates a GraphQL operation string (query or mutation)
+func (f *Field) generateOperationString(schema *Schema, operationType string) (string, error) {
 	if schema == nil {
 		return "", fmt.Errorf("schema is nil")
 	}
 
-	var mutation strings.Builder
+	var operation strings.Builder
 
-	// Start with the mutation keyword and variable declarations
-	mutation.WriteString("mutation")
+	// Start with the operation keyword and variable declarations
+	operation.WriteString(operationType)
 	if len(f.Args) > 0 {
-		mutation.WriteString("(")
+		operation.WriteString("(")
 		for i, arg := range f.Args {
 			if i > 0 {
-				mutation.WriteString(", ")
+				operation.WriteString(", ")
 			}
-			mutation.WriteString("$")
-			mutation.WriteString(arg.Name)
-			mutation.WriteString(": ")
-			mutation.WriteString(arg.Type.GetTypeName())
+			operation.WriteString("$")
+			operation.WriteString(arg.Name)
+			operation.WriteString(": ")
+			operation.WriteString(arg.Type.GetTypeName())
 			if arg.Type.IsNonNull() {
-				mutation.WriteString("!")
+				operation.WriteString("!")
 			}
 		}
-		mutation.WriteString(")")
+		operation.WriteString(")")
 	}
-	mutation.WriteString(" {\n  ")
-	mutation.WriteString(f.Name)
+	operation.WriteString(" {\n  ")
+	operation.WriteString(f.Name)
 
 	// Add field arguments (using variables)
 	if len(f.Args) > 0 {
-		mutation.WriteString("(")
+		operation.WriteString("(")
 		for i, arg := range f.Args {
 			if i > 0 {
-				mutation.WriteString(", ")
+				operation.WriteString(", ")
 			}
-			mutation.WriteString(arg.Name)
-			mutation.WriteString(": $")
-			mutation.WriteString(arg.Name)
+			operation.WriteString(arg.Name)
+			operation.WriteString(": $")
+			operation.WriteString(arg.Name)
 		}
-		mutation.WriteString(")")
+		operation.WriteString(")")
 	}
 
 	// Add selection set based on the return type
-	mutation.WriteString(" {\n    ")
+	operation.WriteString(" {\n    ")
 
 	selectionSet, err := f.generateSelectionSetFromAST(schema)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate selection set: %w", err)
 	}
-	mutation.WriteString(selectionSet)
+	operation.WriteString(selectionSet)
 
-	mutation.WriteString("\n  }\n}")
+	operation.WriteString("\n  }\n}")
 
-	return mutation.String(), nil
+	return operation.String(), nil
 }
 
 // generateSelectionSetFromAST generates a selection set using the parsed schema
@@ -170,8 +123,8 @@ func (f *Field) getReturnTypeNameFromAST() string {
 		return f.getReturnTypeName()
 	}
 
-	// Use the AST type to get the type name
-	return f.getTypeNameFromAST(f.ASTType)
+	// Use the unified AST type name extraction
+	return GetASTTypeName(f.ASTType)
 }
 
 // generateSelectionSetForTypeWithVisited generates a selection set with circular reference protection
@@ -201,7 +154,7 @@ func (f *Field) generateSelectionSetForTypeWithVisited(typeDef *ast.Definition, 
 			if f.shouldIncludeField(field) {
 				// Skip fields that return the same type as the current type being processed to avoid self-referencing
 				// This prevents infinite recursion while allowing legitimate cross-references
-				fieldTypeName := f.getTypeNameFromAST(field.Type)
+				fieldTypeName := GetASTTypeName(field.Type)
 				if fieldTypeName == typeDef.Name {
 					continue // Skip this field to avoid self-referencing
 				}
@@ -282,12 +235,12 @@ func (f *Field) shouldIncludeField(field *ast.FieldDefinition) bool {
 // generateFieldSelectionWithVisited generates a selection for a specific field with circular reference protection
 func (f *Field) generateFieldSelectionWithVisited(field *ast.FieldDefinition, schema *Schema, depth int, visited map[string]bool, originalType string) (string, error) {
 	// Check if this is a scalar type using the schema
-	if f.isScalarTypeWithSchema(field.Type, schema) {
+	if isScalarTypeWithSchema(field.Type, schema) {
 		return field.Name, nil
 	}
 
 	// For complex types, generate nested selection
-	typeName := f.getTypeNameFromAST(field.Type)
+	typeName := GetASTTypeName(field.Type)
 	if typeName == "" {
 		return field.Name, nil
 	}
@@ -307,78 +260,4 @@ func (f *Field) generateFieldSelectionWithVisited(field *ast.FieldDefinition, sc
 	}
 
 	return fmt.Sprintf("%s {\n      %s\n    }", field.Name, strings.ReplaceAll(nestedSelection, "\n    ", "\n      ")), nil
-}
-
-// isScalarType checks if a type is a scalar
-func (f *Field) isScalarType(astType *ast.Type) bool {
-	if astType == nil {
-		return false
-	}
-
-	// Unwrap non-null and list wrappers
-	currentType := astType
-	for currentType != nil {
-		if currentType.NamedType != "" {
-			scalarTypes := map[string]bool{
-				"String":  true,
-				"Int":     true,
-				"Float":   true,
-				"Boolean": true,
-				"ID":      true,
-			}
-			return scalarTypes[currentType.NamedType]
-		}
-		currentType = currentType.Elem
-	}
-	return false
-}
-
-// isScalarTypeWithSchema checks if a type is a scalar using the schema's type registry
-func (f *Field) isScalarTypeWithSchema(astType *ast.Type, schema *Schema) bool {
-	if astType == nil || schema == nil || schema.typeRegistry == nil {
-		return false
-	}
-
-	// Unwrap non-null and list wrappers
-	currentType := astType
-	for currentType != nil {
-		if currentType.NamedType != "" {
-			// Check if it's a built-in scalar type
-			scalarTypes := map[string]bool{
-				"String":  true,
-				"Int":     true,
-				"Float":   true,
-				"Boolean": true,
-				"ID":      true,
-			}
-			if scalarTypes[currentType.NamedType] {
-				return true
-			}
-
-			// Check the type registry to see if it's defined as a scalar
-			if typeDef := schema.GetTypeDefinition(currentType.NamedType); typeDef != nil {
-				return typeDef.Kind == ast.Scalar
-			}
-
-			return false
-		}
-		currentType = currentType.Elem
-	}
-	return false
-}
-
-// getTypeNameFromAST extracts the type name from an AST type
-func (f *Field) getTypeNameFromAST(astType *ast.Type) string {
-	if astType == nil {
-		return ""
-	}
-
-	currentType := astType
-	for currentType != nil {
-		if currentType.NamedType != "" {
-			return currentType.NamedType
-		}
-		currentType = currentType.Elem
-	}
-	return ""
 }

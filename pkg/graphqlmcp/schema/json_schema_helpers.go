@@ -50,29 +50,30 @@ func (s *Schema) CreateInputObjectSchema(typeName string) map[string]interface{}
 
 // CreateInputFieldSchemaFromAST creates a JSON schema for an input field from AST
 func (s *Schema) CreateInputFieldSchemaFromAST(field *ast.FieldDefinition) map[string]interface{} {
+	return s.createBaseSchemaFromAST(field.Type, field.Description, field.DefaultValue)
+}
+
+// createBaseSchemaFromAST creates a base JSON schema from AST type with common logic
+func (s *Schema) createBaseSchemaFromAST(astType *ast.Type, description string, defaultValue *ast.Value) map[string]interface{} {
 	schema := map[string]interface{}{
-		"type": ASTTypeToJSONSchemaType(field.Type),
+		"type": ASTTypeToJSONSchemaType(astType),
 	}
 
 	// Add description if available
-	if field.Description != "" {
-		schema["description"] = field.Description
+	if description != "" {
+		schema["description"] = description
 	}
 
 	// Handle list types
-	if IsASTTypeList(field.Type) {
+	if IsASTTypeList(astType) {
 		schema["type"] = "array"
-		itemSchema := s.CreateInputFieldSchemaFromAST(&ast.FieldDefinition{
-			Name:        field.Name,
-			Description: field.Description,
-			Type:        field.Type.Elem,
-		})
+		itemSchema := s.createBaseSchemaFromAST(astType.Elem, description, defaultValue)
 		schema["items"] = itemSchema
 		return schema
 	}
 
 	// Handle nested input object types
-	typeName := GetASTTypeName(field.Type)
+	typeName := GetASTTypeName(astType)
 	if typeName != "" && !isBuiltinType(typeName) {
 		if inputObjectSchema := s.CreateInputObjectSchema(typeName); inputObjectSchema != nil {
 			// Merge the input object schema with the current schema
@@ -83,8 +84,8 @@ func (s *Schema) CreateInputFieldSchemaFromAST(field *ast.FieldDefinition) map[s
 	}
 
 	// Add default value if available
-	if field.DefaultValue != nil {
-		schema["default"] = field.DefaultValue.Raw
+	if defaultValue != nil {
+		schema["default"] = defaultValue.Raw
 	}
 
 	return schema
@@ -92,6 +93,11 @@ func (s *Schema) CreateInputFieldSchemaFromAST(field *ast.FieldDefinition) map[s
 
 // CreateTypeRefSchema creates a JSON schema for a TypeRef
 func (s *Schema) CreateTypeRefSchema(typeRef *TypeRef, description string) map[string]interface{} {
+	return s.createBaseSchemaFromTypeRef(typeRef, description, "")
+}
+
+// createBaseSchemaFromTypeRef creates a base JSON schema from TypeRef with common logic
+func (s *Schema) createBaseSchemaFromTypeRef(typeRef *TypeRef, description, defaultValue string) map[string]interface{} {
 	schema := map[string]interface{}{
 		"type": typeRef.ToJSONSchemaType(),
 	}
@@ -104,7 +110,7 @@ func (s *Schema) CreateTypeRefSchema(typeRef *TypeRef, description string) map[s
 	// Handle list types
 	if typeRef.IsList() {
 		schema["type"] = "array"
-		itemSchema := s.CreateTypeRefSchema(typeRef.OfType, description)
+		itemSchema := s.createBaseSchemaFromTypeRef(typeRef.OfType, description, defaultValue)
 		schema["items"] = itemSchema
 		return schema
 	}
@@ -119,45 +125,17 @@ func (s *Schema) CreateTypeRefSchema(typeRef *TypeRef, description string) map[s
 		}
 	}
 
+	// Add default value if available
+	if defaultValue != "" {
+		schema["default"] = defaultValue
+	}
+
 	return schema
 }
 
 // CreateArgumentSchema creates a JSON schema for a GraphQL argument
 func (s *Schema) CreateArgumentSchema(arg *Argument) map[string]interface{} {
-	schema := map[string]interface{}{
-		"type": arg.Type.ToJSONSchemaType(),
-	}
-
-	// Add description if available
-	if arg.Description != "" {
-		schema["description"] = arg.Description
-	}
-
-	// Handle list types
-	if arg.Type.IsList() {
-		schema["type"] = "array"
-		// Create schema for list items
-		itemSchema := s.CreateTypeRefSchema(arg.Type.OfType, arg.Description)
-		schema["items"] = itemSchema
-		return schema
-	}
-
-	// Handle input object types - resolve the actual input object definition
-	if arg.Type.GetTypeName() != "" && !isBuiltinType(arg.Type.GetTypeName()) {
-		if inputObjectSchema := s.CreateInputObjectSchema(arg.Type.GetTypeName()); inputObjectSchema != nil {
-			// Merge the input object schema with the current schema
-			for key, value := range inputObjectSchema {
-				schema[key] = value
-			}
-		}
-	}
-
-	// Add default value if available
-	if arg.DefaultValue != "" {
-		schema["default"] = arg.DefaultValue
-	}
-
-	return schema
+	return s.createBaseSchemaFromTypeRef(arg.Type, arg.Description, arg.DefaultValue)
 }
 
 // CreateInputSchema creates a JSON schema for the tool input

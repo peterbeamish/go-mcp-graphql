@@ -160,6 +160,16 @@ func parseTypeToAST(data map[string]interface{}) (*ast.Definition, error) {
 
 // parseFieldToAST converts field introspection data to gqlparser AST FieldDefinition
 func parseFieldToAST(data map[string]interface{}) (*ast.FieldDefinition, error) {
+	return parseFieldDefinition(data, true)
+}
+
+// parseInputFieldToAST converts input field introspection data to gqlparser AST FieldDefinition
+func parseInputFieldToAST(data map[string]interface{}) (*ast.FieldDefinition, error) {
+	return parseFieldDefinition(data, false)
+}
+
+// parseFieldDefinition is the unified implementation for parsing field definitions
+func parseFieldDefinition(data map[string]interface{}, includeArgs bool) (*ast.FieldDefinition, error) {
 	name, ok := data["name"].(string)
 	if !ok {
 		return nil, fmt.Errorf("field missing name")
@@ -179,50 +189,29 @@ func parseFieldToAST(data map[string]interface{}) (*ast.FieldDefinition, error) 
 		field.Type = fieldType
 	}
 
-	// Parse arguments
-	if argsData, ok := data["args"].([]interface{}); ok {
-		field.Arguments = make([]*ast.ArgumentDefinition, 0, len(argsData))
-		for _, argData := range argsData {
-			if argMap, ok := argData.(map[string]interface{}); ok {
-				arg, err := parseArgumentToAST(argMap)
-				if err != nil {
-					return nil, fmt.Errorf("failed to parse argument: %w", err)
+	// Parse arguments (only for regular fields, not input fields)
+	if includeArgs {
+		if argsData, ok := data["args"].([]interface{}); ok {
+			field.Arguments = make([]*ast.ArgumentDefinition, 0, len(argsData))
+			for _, argData := range argsData {
+				if argMap, ok := argData.(map[string]interface{}); ok {
+					arg, err := parseArgumentToAST(argMap)
+					if err != nil {
+						return nil, fmt.Errorf("failed to parse argument: %w", err)
+					}
+					field.Arguments = append(field.Arguments, arg)
 				}
-				field.Arguments = append(field.Arguments, arg)
 			}
 		}
 	}
 
-	return field, nil
-}
-
-// parseInputFieldToAST converts input field introspection data to gqlparser AST FieldDefinition
-func parseInputFieldToAST(data map[string]interface{}) (*ast.FieldDefinition, error) {
-	name, ok := data["name"].(string)
-	if !ok {
-		return nil, fmt.Errorf("input field missing name")
-	}
-
-	field := &ast.FieldDefinition{
-		Name:        name,
-		Description: getString(data, "description"),
-		// Input fields don't have arguments, so Arguments is left as nil
-	}
-
-	// Parse type
-	if typeData, ok := data["type"].(map[string]interface{}); ok {
-		fieldType, err := parseTypeRefToAST(typeData)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse input field type: %w", err)
-		}
-		field.Type = fieldType
-	}
-
-	// Parse default value
-	if defaultValue, ok := data["defaultValue"]; ok && defaultValue != nil {
-		field.DefaultValue = &ast.Value{
-			Kind: ast.StringValue,
-			Raw:  fmt.Sprintf("%v", defaultValue),
+	// Parse default value (for input fields)
+	if !includeArgs {
+		if defaultValue, ok := data["defaultValue"]; ok && defaultValue != nil {
+			field.DefaultValue = &ast.Value{
+				Kind: ast.StringValue,
+				Raw:  fmt.Sprintf("%v", defaultValue),
+			}
 		}
 	}
 
@@ -309,20 +298,5 @@ func parseTypeRefToAST(data map[string]interface{}) (*ast.Type, error) {
 
 // parseKindToAST converts GraphQL kind string to gqlparser AST DefinitionKind
 func parseKindToAST(kind string) ast.DefinitionKind {
-	switch kind {
-	case "OBJECT":
-		return ast.Object
-	case "INTERFACE":
-		return ast.Interface
-	case "UNION":
-		return ast.Union
-	case "ENUM":
-		return ast.Enum
-	case "INPUT_OBJECT":
-		return ast.InputObject
-	case "SCALAR":
-		return ast.Scalar
-	default:
-		return ast.Object
-	}
+	return convertStringToKind(kind)
 }

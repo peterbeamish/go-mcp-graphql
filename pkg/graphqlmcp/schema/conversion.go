@@ -73,6 +73,11 @@ func convertTypeFromAST(astType *ast.Type) *TypeRef {
 
 // convertKindFromAST converts gqlparser AST DefinitionKind to string
 func convertKindFromAST(kind ast.DefinitionKind) string {
+	return convertKindToString(kind)
+}
+
+// convertKindToString converts gqlparser AST DefinitionKind to string
+func convertKindToString(kind ast.DefinitionKind) string {
 	switch kind {
 	case ast.Object:
 		return "OBJECT"
@@ -88,6 +93,26 @@ func convertKindFromAST(kind ast.DefinitionKind) string {
 		return "SCALAR"
 	default:
 		return "OBJECT"
+	}
+}
+
+// convertStringToKind converts GraphQL kind string to gqlparser AST DefinitionKind
+func convertStringToKind(kind string) ast.DefinitionKind {
+	switch kind {
+	case "OBJECT":
+		return ast.Object
+	case "INTERFACE":
+		return ast.Interface
+	case "UNION":
+		return ast.Union
+	case "ENUM":
+		return ast.Enum
+	case "INPUT_OBJECT":
+		return ast.InputObject
+	case "SCALAR":
+		return ast.Scalar
+	default:
+		return ast.Object
 	}
 }
 
@@ -117,6 +142,57 @@ func isBuiltinType(name string) bool {
 // isIntrospectionType checks if a type name is an introspection type
 func isIntrospectionType(name string) bool {
 	return strings.HasPrefix(name, "__")
+}
+
+// isScalarType checks if a type is a scalar using built-in types
+func isScalarType(astType *ast.Type) bool {
+	if astType == nil {
+		return false
+	}
+
+	// Unwrap non-null and list wrappers
+	currentType := astType
+	for currentType != nil {
+		if currentType.NamedType != "" {
+			scalarTypes := map[string]bool{
+				"String":  true,
+				"Int":     true,
+				"Float":   true,
+				"Boolean": true,
+				"ID":      true,
+			}
+			return scalarTypes[currentType.NamedType]
+		}
+		currentType = currentType.Elem
+	}
+	return false
+}
+
+// isScalarTypeWithSchema checks if a type is a scalar using the schema's type registry
+func isScalarTypeWithSchema(astType *ast.Type, schema *Schema) bool {
+	if astType == nil || schema == nil || schema.typeRegistry == nil {
+		return false
+	}
+
+	// Unwrap non-null and list wrappers
+	currentType := astType
+	for currentType != nil {
+		if currentType.NamedType != "" {
+			// Check if it's a built-in scalar type
+			if isScalarType(currentType) {
+				return true
+			}
+
+			// Check the type registry to see if it's defined as a scalar
+			if typeDef := schema.GetTypeDefinition(currentType.NamedType); typeDef != nil {
+				return typeDef.Kind == ast.Scalar
+			}
+
+			return false
+		}
+		currentType = currentType.Elem
+	}
+	return false
 }
 
 // getString safely extracts a string value from a map
@@ -153,6 +229,11 @@ func ASTTypeToJSONSchemaType(astType *ast.Type) string {
 
 // GetASTTypeName extracts the type name from an AST type
 func GetASTTypeName(astType *ast.Type) string {
+	return extractTypeNameFromAST(astType)
+}
+
+// extractTypeNameFromAST is the unified implementation for extracting type names from AST types
+func extractTypeNameFromAST(astType *ast.Type) string {
 	if astType == nil {
 		return ""
 	}
