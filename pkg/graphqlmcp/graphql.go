@@ -6,10 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/peterbeamish/go-mcp-graphql/pkg/graphqlmcp/schema"
 )
 
@@ -18,7 +18,7 @@ type GraphQLClient struct {
 	endpoint   string
 	httpClient *http.Client
 	headers    map[string]string
-	logger     *slog.Logger
+	logger     logr.Logger
 }
 
 // NewGraphQLClient creates a new GraphQL client
@@ -29,7 +29,7 @@ func NewGraphQLClient(endpoint string) *GraphQLClient {
 			Timeout: 30 * time.Second,
 		},
 		headers: make(map[string]string),
-		logger:  slog.Default(),
+		logger:  logr.Discard(),
 	}
 }
 
@@ -39,7 +39,7 @@ func (c *GraphQLClient) SetHeader(key, value string) {
 }
 
 // SetLogger sets a custom logger for the GraphQL client
-func (c *GraphQLClient) SetLogger(logger *slog.Logger) {
+func (c *GraphQLClient) SetLogger(logger logr.Logger) {
 	c.logger = logger
 }
 
@@ -322,16 +322,15 @@ func (c *GraphQLClient) IntrospectSchema(ctx context.Context) (*schema.Schema, e
 
 	resp, err := c.executeRequest(ctx, req, requestID)
 	if err != nil {
-		c.logger.Error("Introspection query execution failed",
+		c.logger.Error(err, "Introspection query execution failed",
 			"request_id", requestID,
 			"endpoint", c.endpoint,
-			"error", err,
 		)
 		return nil, fmt.Errorf("failed to execute introspection query: %w", err)
 	}
 
 	if len(resp.Errors) > 0 {
-		c.logger.Error("Introspection query returned errors",
+		c.logger.Info("Introspection query returned errors",
 			"request_id", requestID,
 			"endpoint", c.endpoint,
 			"error_count", len(resp.Errors),
@@ -343,7 +342,7 @@ func (c *GraphQLClient) IntrospectSchema(ctx context.Context) (*schema.Schema, e
 	// Parse the introspection response
 	schemaData, ok := resp.Data.(map[string]interface{})
 	if !ok {
-		c.logger.Error("Invalid introspection response format",
+		c.logger.Info("Invalid introspection response format",
 			"request_id", requestID,
 			"endpoint", c.endpoint,
 			"response_data_type", fmt.Sprintf("%T", resp.Data),
@@ -353,10 +352,9 @@ func (c *GraphQLClient) IntrospectSchema(ctx context.Context) (*schema.Schema, e
 
 	schema, err := schema.ParseIntrospectionResponse(schemaData)
 	if err != nil {
-		c.logger.Error("Failed to parse introspection response",
+		c.logger.Error(err, "Failed to parse introspection response",
 			"request_id", requestID,
 			"endpoint", c.endpoint,
-			"error", err,
 		)
 		return nil, fmt.Errorf("failed to parse introspection response: %w", err)
 	}
@@ -394,15 +392,14 @@ func (c *GraphQLClient) ExecuteQuery(ctx context.Context, query string, variable
 func (c *GraphQLClient) executeRequest(ctx context.Context, req *GraphQLRequest, requestID string) (*GraphQLResponse, error) {
 	jsonData, err := json.Marshal(req)
 	if err != nil {
-		c.logger.Error("Failed to marshal GraphQL request",
+		c.logger.Error(err, "Failed to marshal GraphQL request",
 			"request_id", requestID,
-			"error", err,
 		)
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
 	// Log the request details at debug level
-	c.logger.Debug("GraphQL request details",
+	c.logger.V(1).Info("GraphQL request details",
 		"request_id", requestID,
 		"query", req.Query,
 		"variables", req.Variables,
@@ -411,10 +408,9 @@ func (c *GraphQLClient) executeRequest(ctx context.Context, req *GraphQLRequest,
 
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", c.endpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
-		c.logger.Error("Failed to create HTTP request",
+		c.logger.Error(err, "Failed to create HTTP request",
 			"request_id", requestID,
 			"endpoint", c.endpoint,
-			"error", err,
 		)
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -438,11 +434,10 @@ func (c *GraphQLClient) executeRequest(ctx context.Context, req *GraphQLRequest,
 	duration := time.Since(startTime)
 
 	if err != nil {
-		c.logger.Error("GraphQL HTTP request failed",
+		c.logger.Error(err, "GraphQL HTTP request failed",
 			"request_id", requestID,
 			"endpoint", c.endpoint,
 			"duration_ms", duration.Milliseconds(),
-			"error", err,
 		)
 		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
@@ -450,18 +445,17 @@ func (c *GraphQLClient) executeRequest(ctx context.Context, req *GraphQLRequest,
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		c.logger.Error("Failed to read GraphQL response body",
+		c.logger.Error(err, "Failed to read GraphQL response body",
 			"request_id", requestID,
 			"endpoint", c.endpoint,
 			"duration_ms", duration.Milliseconds(),
 			"status_code", resp.StatusCode,
-			"error", err,
 		)
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		c.logger.Error("GraphQL request failed with non-OK status",
+		c.logger.Info("GraphQL request failed with non-OK status",
 			"request_id", requestID,
 			"endpoint", c.endpoint,
 			"duration_ms", duration.Milliseconds(),
@@ -473,12 +467,11 @@ func (c *GraphQLClient) executeRequest(ctx context.Context, req *GraphQLRequest,
 
 	var graphqlResp GraphQLResponse
 	if err := json.Unmarshal(body, &graphqlResp); err != nil {
-		c.logger.Error("Failed to unmarshal GraphQL response",
+		c.logger.Error(err, "Failed to unmarshal GraphQL response",
 			"request_id", requestID,
 			"endpoint", c.endpoint,
 			"duration_ms", duration.Milliseconds(),
 			"response_size_bytes", len(body),
-			"error", err,
 		)
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}

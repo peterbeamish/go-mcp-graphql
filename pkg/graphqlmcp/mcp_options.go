@@ -1,13 +1,14 @@
 package graphqlmcp
 
 import (
-	"log/slog"
 	"regexp"
+
+	"github.com/go-logr/logr"
 )
 
 // MCPGraphQLServerOptions holds configuration options for the MCP GraphQL server
 type MCPGraphQLServerOptions struct {
-	Logger          *slog.Logger
+	Logger          logr.Logger
 	Mask            *MaskConfig
 	PassthruHeaders []string
 }
@@ -28,7 +29,7 @@ type MaskConfig struct {
 type MCPGraphQLServerOption func(*MCPGraphQLServerOptions)
 
 // WithLogger sets a custom logger for the MCP GraphQL server
-func WithLogger(logger *slog.Logger) MCPGraphQLServerOption {
+func WithLogger(logger logr.Logger) MCPGraphQLServerOption {
 	return func(opts *MCPGraphQLServerOptions) {
 		opts.Logger = logger
 	}
@@ -99,8 +100,8 @@ func WithPassthruHeaders(headers []string) MCPGraphQLServerOption {
 // NewMCPGraphQLServerOptions creates a new options struct with default values
 func NewMCPGraphQLServerOptions() *MCPGraphQLServerOptions {
 	return &MCPGraphQLServerOptions{
-		Logger:          nil, // Will use slog.Default() if not set
-		Mask:            nil, // No masking by default
-		PassthruHeaders: nil, // No passthru headers by default
+		Logger:          logr.Discard(), // Will use default logger if not set
+		Mask:            nil,            // No masking by default
+		PassthruHeaders: nil,            // No passthru headers by default
 	}
 }

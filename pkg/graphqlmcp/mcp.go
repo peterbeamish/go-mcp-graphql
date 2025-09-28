@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/peterbeamish/go-mcp-graphql/pkg/graphqlmcp/schema"
 )
@@ -18,7 +18,7 @@ type MCPGraphQLServer struct {
 	executor  GraphQLExecutor
 	Schema    *schema.Schema
 	mcpServer *mcp.Server
-	logger    *slog.Logger
+	logger    logr.Logger
 	options   *MCPGraphQLServerOptions
 }
 
@@ -54,8 +54,8 @@ func NewMCPGraphQLServerWithExecutor(executor GraphQLExecutor, opts ...MCPGraphQ
 
 	// Set logger - use provided logger or default
 	logger := options.Logger
-	if logger == nil {
-		logger = slog.Default()
+	if logger.GetSink() == nil {
+		logger = logr.Discard()
 	}
 
 	server := &MCPGraphQLServer{
@@ -81,7 +81,7 @@ func (s *MCPGraphQLServer) addGraphQLTools() error {
 	for _, query := range queries {
 		// Check if this query is allowed based on masking options
 		if !s.options.isOperationAllowed(query.Name) {
-			s.logger.Debug("Skipping query due to masking rules", "query_name", query.Name)
+			s.logger.V(1).Info("Skipping query due to masking rules", "query_name", query.Name)
 			continue
 		}
 
@@ -95,7 +95,7 @@ func (s *MCPGraphQLServer) addGraphQLTools() error {
 	for _, mutation := range mutations {
 		// Check if this mutation is allowed based on masking options
 		if !s.options.isOperationAllowed(mutation.Name) {
-			s.logger.Debug("Skipping mutation due to masking rules", "mutation_name", mutation.Name)
+			s.logger.V(1).Info("Skipping mutation due to masking rules", "mutation_name", mutation.Name)
 			continue
 		}
 
@@ -203,27 +203,25 @@ func (s *MCPGraphQLServer) executeGraphQLOperation(ctx context.Context, field *s
 	if operationType == "query" {
 		queryString, err = field.GenerateQueryStringWithSchema(s.Schema)
 		if err != nil {
-			s.logger.Error("Failed to generate query string",
+			s.logger.Error(err, "Failed to generate query string",
 				"request_id", requestID,
 				"field_name", field.Name,
-				"error", err,
 			)
 			return nil, fmt.Errorf("failed to generate query string: %w", err)
 		}
 	} else {
 		queryString, err = field.GenerateMutationStringWithSchema(s.Schema)
 		if err != nil {
-			s.logger.Error("Failed to generate mutation string",
+			s.logger.Error(err, "Failed to generate mutation string",
 				"request_id", requestID,
 				"field_name", field.Name,
-				"error", err,
 			)
 			return nil, fmt.Errorf("failed to generate mutation string: %w", err)
 		}
 	}
 
 	// Log the generated query/mutation
-	s.logger.Debug("Generated GraphQL operation",
+	s.logger.V(1).Info("Generated GraphQL operation",
 		"request_id", requestID,
 		"operation_type", operationType,
 		"field_name", field.Name,
@@ -236,12 +234,11 @@ func (s *MCPGraphQLServer) executeGraphQLOperation(ctx context.Context, field *s
 	duration := time.Since(startTime)
 
 	if err != nil {
-		s.logger.Error("GraphQL execution failed",
+		s.logger.Error(err, "GraphQL execution failed",
 			"request_id", requestID,
 			"operation_type", operationType,
 			"field_name", field.Name,
 			"duration_ms", duration.Milliseconds(),
-			"error", err,
 		)
 		return &mcp.CallToolResult{
 			IsError: true,
@@ -259,7 +256,7 @@ func (s *MCPGraphQLServer) executeGraphQLOperation(ctx context.Context, field *s
 		for i, err := range resp.Errors {
 			errorMessages[i] = err.Message
 		}
-		s.logger.Error("GraphQL operation returned errors",
+		s.logger.Info("GraphQL operation returned errors",
 			"request_id", requestID,
 			"operation_type", operationType,
 			"field_name", field.Name,
@@ -280,12 +277,11 @@ func (s *MCPGraphQLServer) executeGraphQLOperation(ctx context.Context, field *s
 	// Convert response to JSON string
 	jsonData, err := json.MarshalIndent(resp.Data, "", "  ")
 	if err != nil {
-		s.logger.Error("Failed to marshal GraphQL response",
+		s.logger.Error(err, "Failed to marshal GraphQL response",
 			"request_id", requestID,
 			"operation_type", operationType,
 			"field_name", field.Name,
 			"duration_ms", duration.Milliseconds(),
-			"error", err,
 		)
 		return &mcp.CallToolResult{
 			IsError: true,
@@ -322,7 +318,7 @@ func (s *MCPGraphQLServer) GetMCPServer() *mcp.Server {
 }
 
 // SetLogger sets a custom logger for the server
-func (s *MCPGraphQLServer) SetLogger(logger *slog.Logger) {
+func (s *MCPGraphQLServer) SetLogger(logger logr.Logger) {
 	s.logger = logger
 }
 

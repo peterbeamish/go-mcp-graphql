@@ -3,10 +3,13 @@ package graphqlmcp
 import (
 	"log/slog"
 	"os"
+
+	"github.com/go-logr/logr"
+	"github.com/go-logr/logr/slogr"
 )
 
 // ConfigureLogging sets up structured logging for the MCP GraphQL server
-func ConfigureLogging(level slog.Level, jsonOutput bool) *slog.Logger {
+func ConfigureLogging(level slog.Level, jsonOutput bool) logr.Logger {
 	var handler slog.Handler
 
 	if jsonOutput {
@@ -19,17 +22,17 @@ func ConfigureLogging(level slog.Level, jsonOutput bool) *slog.Logger {
 		})
 	}
 
-	logger := slog.New(handler)
-	slog.SetDefault(logger)
-	return logger
+	slogger := slog.New(handler)
+	slog.SetDefault(slogger)
+	return slogr.NewLogr(handler)
 }
 
 // ConfigureVerboseLogging sets up verbose logging for debugging
-func ConfigureVerboseLogging() *slog.Logger {
+func ConfigureVerboseLogging() logr.Logger {
 	return ConfigureLogging(slog.LevelDebug, false)
 }
 
 // ConfigureProductionLogging sets up production-appropriate logging
-func ConfigureProductionLogging() *slog.Logger {
+func ConfigureProductionLogging() logr.Logger {
 	return ConfigureLogging(slog.LevelInfo, true)
 }
