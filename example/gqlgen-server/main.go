@@ -1,8 +1,14 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
+	"time"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
@@ -10,26 +16,79 @@ import (
 	"github.com/peterbeamish/go-mcp-graphql/example/gqlgen-server/resolver"
 )
 
-// StartHTTPServer starts the GraphQL HTTP server
-func StartHTTPServer(addr string) error {
-	// Create a new GraphQL server
-	srv := handler.NewDefaultServer(graphql.NewExecutableSchema(graphql.Config{Resolvers: resolver.NewResolver()}))
+func main() {
+	// Create context with cancellation tied to OS signals
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	// Add playground for testing
-	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	http.Handle("/query", srv)
+	// Create WaitGroup to wait for both servers to exit
+	var wg sync.WaitGroup
 
-	// Add introspection endpoint
-	http.Handle("/graphql", srv)
+	// Set up signal handling
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
-	log.Printf("GraphQL server starting on %s", addr)
-	log.Println("Playground available at: http://localhost" + addr)
-	log.Println("GraphQL endpoint: http://localhost" + addr + "/query")
-	log.Println("Introspection endpoint: http://localhost" + addr + "/graphql")
+	// Start signal handler in background
+	go func() {
+		<-sigChan
+		log.Println("Received shutdown signal, canceling context...")
+		cancel()
+	}()
 
-	return http.ListenAndServe(addr, nil)
+	// Start GraphQL server
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		startGraphQLServer(ctx)
+	}()
+
+	// Wait for context cancellation// Wait for context cancellation
+	<-ctx.Done()
+	log.Println("Shutting down servers...")
+
+	// Wait for both servers to exit
+	wg.Wait()
+	log.Println("Server shutdown complete")
 }
 
-func main() {
-	log.Fatal(StartHTTPServer(":8081"))
+func startGraphQLServer(ctx context.Context) {
+	// Create GraphQL server
+	graphqlResolver := resolver.NewResolver()
+	graphqlServer := handler.NewDefaultServer(graphql.NewExecutableSchema(graphql.Config{Resolvers: graphqlResolver}))
+
+	// Create HTTP server
+	graphqlMux := http.NewServeMux()
+	graphqlMux.Handle("/", playground.Handler("GraphQL playground", "/query"))
+	graphqlMux.Handle("/query", graphqlServer)
+	graphqlMux.Handle("/graphql", graphqlServer)
+
+	server := &http.Server{
+		Addr:    ":8080",
+		Handler: graphqlMux,
+	}
+
+	// Start server in background
+	go func() {
+		log.Println("Starting GraphQL server on :8080...")
+		log.Println("📊 GraphQL Playground: http://localhost:8080")
+		log.Println("🔍 GraphQL Endpoint: http://localhost:8080/query")
+		log.Println("📋 Introspection: http://localhost:8080/graphql")
+
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Printf("GraphQL server failed: %v", err)
+		}
+	}()
+
+	// Wait for context cancellation
+	<-ctx.Done()
+
+	log.Println("Shutting down GraphQL server...")
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer shutdownCancel()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log.Printf("GraphQL server shutdown error: %v", err)
+	} else {
+		log.Println("GraphQL server shutdown complete")
+	}
 }
