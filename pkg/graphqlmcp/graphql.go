@@ -58,6 +58,7 @@ type GraphQLResponse struct {
 }
 
 // IntrospectionQuery is the standard GraphQL introspection query
+// This query includes comprehensive support for all GraphQL types including unions
 const IntrospectionQuery = `
 query IntrospectionQuery {
   __schema {
@@ -84,12 +85,21 @@ query IntrospectionQuery {
         }
         args {
           name
+          description
           type {
             name
             kind
             ofType {
               name
               kind
+              ofType {
+                name
+                kind
+                ofType {
+                  name
+                  kind
+                }
+              }
             }
           }
           defaultValue
@@ -119,12 +129,65 @@ query IntrospectionQuery {
         }
         args {
           name
+          description
           type {
             name
             kind
             ofType {
               name
               kind
+              ofType {
+                name
+                kind
+                ofType {
+                  name
+                  kind
+                }
+              }
+            }
+          }
+          defaultValue
+        }
+      }
+    }
+    subscriptionType {
+      name
+      fields {
+        name
+        description
+        type {
+          name
+          kind
+          ofType {
+            name
+            kind
+            ofType {
+              name
+              kind
+              ofType {
+                name
+                kind
+              }
+            }
+          }
+        }
+        args {
+          name
+          description
+          type {
+            name
+            kind
+            ofType {
+              name
+              kind
+              ofType {
+                name
+                kind
+                ofType {
+                  name
+                  kind
+                }
+              }
             }
           }
           defaultValue
@@ -156,12 +219,21 @@ query IntrospectionQuery {
         }
         args {
           name
+          description
           type {
             name
             kind
             ofType {
               name
               kind
+              ofType {
+                name
+                kind
+                ofType {
+                  name
+                  kind
+                }
+              }
             }
           }
           defaultValue
@@ -191,12 +263,44 @@ query IntrospectionQuery {
       enumValues {
         name
         description
+        isDeprecated
+        deprecationReason
       }
       interfaces {
         name
+        kind
+        description
       }
       possibleTypes {
         name
+        kind
+        description
+      }
+    }
+    directives {
+      name
+      description
+      locations
+      args {
+        name
+        description
+        type {
+          name
+          kind
+          ofType {
+            name
+            kind
+            ofType {
+              name
+              kind
+              ofType {
+                name
+                kind
+              }
+            }
+          }
+        }
+        defaultValue
       }
     }
   }
