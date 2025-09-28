@@ -257,43 +257,36 @@ func parseTypeRefToAST(data map[string]interface{}) (*ast.Type, error) {
 		return nil, fmt.Errorf("type reference missing kind")
 	}
 
-	astType := &ast.Type{}
-
 	switch kind {
 	case "NON_NULL":
-		astType.NonNull = true
 		if ofType, ok := data["ofType"].(map[string]interface{}); ok {
 			innerType, err := parseTypeRefToAST(ofType)
 			if err != nil {
 				return nil, err
 			}
-			astType.Elem = innerType
+			// Create a non-null wrapper around the inner type
+			return &ast.Type{
+				NonNull: true,
+				Elem:    innerType,
+			}, nil
 		}
+		return nil, fmt.Errorf("NON_NULL type missing ofType")
 	case "LIST":
 		if ofType, ok := data["ofType"].(map[string]interface{}); ok {
 			innerType, err := parseTypeRefToAST(ofType)
 			if err != nil {
 				return nil, err
 			}
-			astType.Elem = innerType
+			return ast.ListType(innerType, nil), nil
 		}
+		return nil, fmt.Errorf("LIST type missing ofType")
 	default:
 		// For scalar types and other named types
 		if name, ok := data["name"].(string); ok && name != "" {
-			astType.NamedType = name
-		} else {
-			// If no name, try to get it from ofType (for deeply nested types)
-			if ofType, ok := data["ofType"].(map[string]interface{}); ok {
-				innerType, err := parseTypeRefToAST(ofType)
-				if err != nil {
-					return nil, err
-				}
-				astType.Elem = innerType
-			}
+			return ast.NamedType(name, nil), nil
 		}
+		return nil, fmt.Errorf("type missing name")
 	}
-
-	return astType, nil
 }
 
 // parseKindToAST converts GraphQL kind string to gqlparser AST DefinitionKind

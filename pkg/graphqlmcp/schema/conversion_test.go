@@ -310,10 +310,8 @@ func TestIsASTTypeList(t *testing.T) {
 		{
 			name: "non-null non-list",
 			astType: &ast.Type{
-				NonNull: true,
-				Elem: &ast.Type{
-					NamedType: "String",
-				},
+				NonNull:   true,
+				NamedType: "String",
 			},
 			expected: false,
 		},

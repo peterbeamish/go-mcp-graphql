@@ -24,7 +24,7 @@ func convertASTToType(astDef *ast.Definition) *Type {
 		field := &Field{
 			Name:        astField.Name,
 			Description: astField.Description,
-			Type:        convertTypeFromAST(astField.Type),
+			Type:        ConvertTypeFromAST(astField.Type),
 			ASTType:     astField.Type, // Store the AST type for dynamic query generation
 		}
 
@@ -34,7 +34,7 @@ func convertASTToType(astDef *ast.Definition) *Type {
 			arg := &Argument{
 				Name:        astArg.Name,
 				Description: astArg.Description,
-				Type:        convertTypeFromAST(astArg.Type),
+				Type:        ConvertTypeFromAST(astArg.Type),
 			}
 			field.Args = append(field.Args, arg)
 		}
@@ -45,27 +45,29 @@ func convertASTToType(astDef *ast.Definition) *Type {
 	return typ
 }
 
-// convertTypeFromAST converts gqlparser AST Type to legacy TypeRef
-func convertTypeFromAST(astType *ast.Type) *TypeRef {
+// ConvertTypeFromAST converts gqlparser AST Type to legacy TypeRef
+func ConvertTypeFromAST(astType *ast.Type) *TypeRef {
 	if astType == nil {
 		return nil
 	}
 
 	typ := &TypeRef{}
 
+	// Handle the innermost type (scalar or named type)
 	if astType.NamedType != "" {
 		typ.Name = astType.NamedType
-		// Don't set a default kind here - let the actual type lookup determine it
+		typ.Kind = "SCALAR" // Default to SCALAR for named types
+		return typ
 	}
 
+	// Handle wrapper types (NON_NULL or LIST)
 	if astType.NonNull {
 		typ.Kind = "NON_NULL"
-		typ.OfType = convertTypeFromAST(astType.Elem)
-		// For NON_NULL types, don't set the name - it should only be on the innermost type
+		typ.OfType = ConvertTypeFromAST(astType.Elem)
 	} else if astType.Elem != nil {
+		// This is a LIST type
 		typ.Kind = "LIST"
-		typ.OfType = convertTypeFromAST(astType.Elem)
-		// For LIST types, don't set the name - it should only be on the innermost type
+		typ.OfType = ConvertTypeFromAST(astType.Elem)
 	}
 
 	return typ
@@ -254,17 +256,10 @@ func IsASTTypeList(astType *ast.Type) bool {
 		return false
 	}
 
-	// Check if this is a list type
-	if astType.Elem != nil && !astType.NonNull {
-		return true
-	}
-
-	// Check if wrapped in non-null
-	if astType.NonNull && astType.Elem != nil {
-		return IsASTTypeList(astType.Elem)
-	}
-
-	return false
+	// A list type has Elem set and NamedType empty
+	// This works for both nullable and non-nullable lists
+	// The key is that the current type has no NamedType (it's a wrapper)
+	return astType.Elem != nil && astType.NamedType == ""
 }
 
 // IsASTTypeNonNull checks if an AST type is non-null

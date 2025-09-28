@@ -47,10 +47,8 @@ func TestSchema_CreateInputObjectSchema(t *testing.T) {
 								Name:        "name",
 								Description: "User name",
 								Type: &ast.Type{
-									NonNull: true,
-									Elem: &ast.Type{
-										NamedType: "String",
-									},
+									NonNull:   true,
+									NamedType: "String",
 								},
 							},
 							{
@@ -91,14 +89,7 @@ func TestSchema_CreateInputObjectSchema(t *testing.T) {
 						Fields: []*ast.FieldDefinition{
 							{
 								Name: "tags",
-								Type: &ast.Type{
-									Elem: &ast.Type{
-										NonNull: true,
-										Elem: &ast.Type{
-											NamedType: "String",
-										},
-									},
-								},
+								Type: ast.ListType(ast.NonNullNamedType("String", nil), nil),
 							},
 						},
 					},
