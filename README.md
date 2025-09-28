@@ -40,10 +40,137 @@ The AI assistant automatically determines which GraphQL operations to call based
 
 ## Features
 
+### Core Functionality
 - **GraphQL Introspection**: Automatically introspects any GraphQL server to understand its schema
 - **MCP Tool Generation**: Converts GraphQL queries and mutations into MCP tools
 - **HTTP Server**: Hosts the MCP server over HTTP for easy integration
 - **Type Safety**: Leverages Go's type system for safe GraphQL operations
+
+### GraphQL Feature Support
+
+#### ✅ **Fully Supported GraphQL Features**
+
+**Basic Types**
+- **Scalars**: String, Int, Float, Boolean, ID, and custom scalars
+- **Objects**: Complex types with fields and relationships
+- **Enums**: Enumeration types with predefined values
+- **Lists**: Arrays of any supported type (nullable and non-nullable)
+- **Non-Null**: Required fields and types
+
+**Advanced Types**
+- **Interfaces**: Abstract types with common fields across implementations
+- **Unions**: Types that can be one of several possible types
+- **Input Objects**: Complex input types for mutations and queries
+- **Directives**: Custom directives (introspected and preserved)
+
+**Query Operations**
+- **Queries**: Read operations with complex selection sets
+- **Mutations**: Write operations with input validation
+- **Subscriptions**: Real-time operations (introspected, client execution required)
+
+**Schema Features**
+- **Field Arguments**: Parameters for queries and mutations
+- **Default Values**: Input field defaults
+- **Deprecation**: Deprecated fields and enum values
+- **Descriptions**: Full documentation support
+- **Type Relationships**: Circular references and complex type hierarchies
+
+#### 🔧 **Union Type Support**
+
+The library provides comprehensive support for GraphQL union types:
+
+**Automatic Union Detection**
+- Introspects union types and their possible member types
+- Generates proper inline fragments for each union member
+- Handles field conflicts between union member types with automatic aliasing
+
+**Query Generation for Unions**
+```graphql
+query {
+  equipmentNotifications {
+    __typename
+    ... on EquipmentAlert {
+      id
+      description
+      EquipmentAlert_type: type
+      EquipmentAlert_severity: severity
+    }
+    ... on MaintenanceReminder {
+      id
+      description
+      MaintenanceReminder_type: type
+      MaintenanceReminder_priority: priority
+    }
+    ... on StatusUpdate {
+      id
+      description
+      newStatus
+      changedAt
+    }
+    ... on PerformanceAlert {
+      id
+      description
+      metricType
+      currentValue
+      expectedValue
+    }
+  }
+}
+```
+
+**Union-Specific Methods**
+- `GetUnions()` - Returns all union types in the schema
+- `GetUnionPossibleTypes(unionName)` - Gets possible types for a union
+- `IsUnionType(typeName)` - Checks if a type is a union
+- `GetUnionByName(unionName)` - Gets a specific union by name
+
+#### 🔧 **Interface Type Support**
+
+**Automatic Interface Handling**
+- Detects interface types and their implementations
+- Generates inline fragments for each implementation
+- Preserves interface field inheritance
+
+**Query Generation for Interfaces**
+```graphql
+query {
+  personnel {
+    __typename
+    id
+    name
+    email
+    ... on Manager {
+      department
+      directReports
+      level
+    }
+    ... on Associate {
+      jobTitle
+      reportsTo {
+        id
+        name
+      }
+    }
+  }
+}
+```
+
+#### 🔧 **Complex Type Support**
+
+**Nested Relationships**
+- Handles deeply nested object relationships
+- Prevents circular reference issues
+- Generates appropriate selection sets
+
+**Type Safety**
+- Validates field types and relationships
+- Ensures proper GraphQL syntax generation
+- Handles nullable and non-nullable types correctly
+
+**Schema Introspection**
+- Complete introspection query with all GraphQL features
+- Supports directives, subscriptions, and advanced schema features
+- Preserves all metadata and documentation
 
 ## Installation
 
@@ -138,9 +265,38 @@ When running as an HTTP server, the following endpoints are available:
 See the `example/` directory for complete working examples:
 
 - `example/client/main.go` - HTTP client example
-- `example/gqlgen-server/` - Complete gqlgen-based GraphQL server
+- `example/gqlgen-server/` - Complete gqlgen-based GraphQL server with advanced features
 - `example/full-demo/` - Complete demo showing the full workflow
 - `Makefile` - Comprehensive build and run commands
+
+### Example Schema Features
+
+The included `example/gqlgen-server/` demonstrates comprehensive GraphQL feature support:
+
+**Union Types**
+- `EquipmentNotification` union with 4 member types:
+  - `EquipmentAlert` - Equipment issues and warnings
+  - `MaintenanceReminder` - Scheduled maintenance notifications
+  - `StatusUpdate` - Equipment status changes
+  - `PerformanceAlert` - Performance metric alerts
+
+**Interface Types**
+- `Personnel` interface with 2 implementations:
+  - `Manager` - Facility managers with department and direct reports
+  - `Associate` - Regular employees with job titles and reporting structure
+
+**Complex Object Types**
+- `Equipment` - Industrial machinery with specifications and relationships
+- `Facility` - Manufacturing facilities with equipment and personnel
+- `MaintenanceRecord` - Maintenance tracking with status and scheduling
+- `OperationalMetric` - Performance data and KPIs
+
+**Advanced Features**
+- Nested object relationships (equipment → facility → personnel)
+- Enum types for status, priority, and categorization
+- Input types for mutations with validation
+- Field arguments and default values
+- Comprehensive documentation and descriptions
 
 ## Configuration
 
@@ -234,6 +390,34 @@ curl -X POST http://localhost:8081/mcp \
 curl -X POST http://localhost:8081/mcp \
   -H "Content-Type: application/json" \
   -d '{"method": "tools/call", "params": {"name": "mutation_createUser", "arguments": {"input": {"name": "Test User", "email": "test@example.com"}}}}'
+```
+
+### Testing Union and Interface Features
+
+The example schema includes advanced GraphQL features that you can test:
+
+**Union Type Query**
+```bash
+# Test the equipmentNotifications union query
+curl -X POST http://localhost:8080/query \
+  -H "Content-Type: application/json" \
+  -d '{"query": "query { equipmentNotifications { __typename ... on EquipmentAlert { id description severity } ... on MaintenanceReminder { id description type priority } ... on StatusUpdate { id description previousStatus newStatus } ... on PerformanceAlert { id description metricType currentValue expectedValue } } }"}'
+```
+
+**Interface Type Query**
+```bash
+# Test the personnel interface query
+curl -X POST http://localhost:8080/query \
+  -H "Content-Type: application/json" \
+  -d '{"query": "query { personnel { __typename id name email ... on Manager { department directReports level } ... on Associate { jobTitle reportsTo { id name } } } }"}'
+```
+
+**Schema Introspection**
+```bash
+# View the complete schema with all features
+curl -X POST http://localhost:8080/query \
+  -H "Content-Type: application/json" \
+  -d '{"query": "query IntrospectionQuery { __schema { types { name kind description possibleTypes { name kind description } } } }"}'
 ```
 
 ## Development Tools
