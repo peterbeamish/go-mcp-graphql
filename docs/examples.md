@@ -24,8 +24,9 @@ Configuration options for the MCP server.
 
 ```go
 type MCPGraphQLServerOptions struct {
-    Logger *slog.Logger
-    Mask   *MaskConfig
+    Logger          *slog.Logger
+    Mask            *MaskConfig
+    PassthruHeaders []string
 }
 ```
 
@@ -44,6 +45,9 @@ Sets a custom logger for the MCP server.
 
 #### `WithMask(allowList, blockList []string)`
 Configures operation filtering by name or pattern.
+
+#### `WithPassthruHeaders(headers []string)`
+Configures which headers to pass through from MCP requests to GraphQL requests.
 
 ### HTTP Functions
 
@@ -158,6 +162,58 @@ func main() {
     log.Println("Starting authenticated MCP GraphQL server on :8080")
     log.Fatal(http.ListenAndServe(":8080", mux))
 }
+```
+
+### Dynamic Authentication with Passthru Headers
+
+This example shows how to use passthru headers to dynamically pass authentication from MCP clients to the GraphQL server:
+
+```go
+package main
+
+import (
+    "log"
+    "net/http"
+    
+    "github.com/peterbeamish/go-mcp-graphql/pkg/graphqlmcp"
+)
+
+func main() {
+    // Create MCP server with passthru headers for dynamic authentication
+    server, err := graphqlmcp.NewMCPGraphQLServer("https://api.example.com/graphql",
+        graphqlmcp.WithPassthruHeaders([]string{
+            "Authorization",    // Bearer tokens from clients
+            "X-User-ID",        // User identification
+            "X-Request-ID",     // Request tracing
+            "X-Tenant-ID",      // Multi-tenant support
+        }),
+    )
+    if err != nil {
+        log.Fatal(err)
+    }
+    
+    // Create HTTP server
+    mux := graphqlmcp.GetCompleteMux(server)
+    
+    log.Println("Starting MCP GraphQL server with dynamic authentication on :8080")
+    log.Println("Clients can now send their own authentication headers!")
+    log.Fatal(http.ListenAndServe(":8080", mux))
+}
+```
+
+**Client Usage:**
+```bash
+# Different clients can use different authentication methods
+curl -H "Authorization: Bearer client1-token" \
+     -H "X-User-ID: user123" \
+     -X POST http://localhost:8080/mcp \
+     -d '{"method":"tools/call","params":{"name":"query_profile","arguments":{}}}'
+
+curl -H "Authorization: Bearer client2-token" \
+     -H "X-User-ID: user456" \
+     -H "X-Tenant-ID: tenant-abc" \
+     -X POST http://localhost:8080/mcp \
+     -d '{"method":"tools/call","params":{"name":"query_orders","arguments":{}}}'
 ```
 
 ### Custom Logging and Filtering

@@ -7,8 +7,9 @@ import (
 
 // MCPGraphQLServerOptions holds configuration options for the MCP GraphQL server
 type MCPGraphQLServerOptions struct {
-	Logger *slog.Logger
-	Mask   *MaskConfig
+	Logger          *slog.Logger
+	Mask            *MaskConfig
+	PassthruHeaders []string
 }
 
 // MaskConfig defines how to filter queries and mutations
@@ -88,10 +89,18 @@ func (opts *MCPGraphQLServerOptions) isOperationAllowed(operationName string) bo
 	return false
 }
 
+// WithPassthruHeaders configures which headers to pass through from MCP requests to GraphQL requests
+func WithPassthruHeaders(headers []string) MCPGraphQLServerOption {
+	return func(opts *MCPGraphQLServerOptions) {
+		opts.PassthruHeaders = headers
+	}
+}
+
 // NewMCPGraphQLServerOptions creates a new options struct with default values
 func NewMCPGraphQLServerOptions() *MCPGraphQLServerOptions {
 	return &MCPGraphQLServerOptions{
-		Logger: nil, // Will use slog.Default() if not set
-		Mask:   nil, // No masking by default
+		Logger:          nil, // Will use slog.Default() if not set
+		Mask:            nil, // No masking by default
+		PassthruHeaders: nil, // No passthru headers by default
 	}
 }

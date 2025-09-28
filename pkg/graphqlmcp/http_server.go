@@ -10,15 +10,24 @@ import (
 // HTTP handler functions for MCP GraphQL server endpoints
 // These functions provide individual handlers that can be registered on any http.ServeMux
 
-// GetMCPHandler returns the MCP endpoint handler using the MCP SDK's StreamableHTTPHandler
+// NewMCPHandler returns the MCP endpoint handler using the MCP SDK's StreamableHTTPHandler
 // which handles all the HTTP transport details including SSE support
-func GetMCPHandler(server *MCPGraphQLServer) http.Handler {
-	return mcp.NewStreamableHTTPHandler(
-		func(r *http.Request) *mcp.Server {
+// If a PassThruHeaderHandler is configured, it will be used to process headers
+func NewMCPHandler(server *MCPGraphQLServer) http.Handler {
+
+	// Use the MCP SDK's handler
+	handler := mcp.NewStreamableHTTPHandler(
+		func(req *http.Request) *mcp.Server {
 			return server.GetMCPServer()
 		},
 		nil,
 	)
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		passthruHeaders := server.ExtractPassthruHeaders(r)
+		r = r.WithContext(AddPassthruHeadersToContext(r.Context(), passthruHeaders))
+		handler.ServeHTTP(w, r)
+	})
 }
 
 // GetHealthHandler returns a health check endpoint handler
@@ -91,7 +100,7 @@ func GetCompleteMux(server *MCPGraphQLServer) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	// Register all handlers
-	mux.Handle("/mcp", GetMCPHandler(server))
+	mux.Handle("/mcp", NewMCPHandler(server))
 	mux.HandleFunc("/health", GetHealthHandler())
 	mux.HandleFunc("/schema", GetSchemaHandler(server))
 	mux.HandleFunc("/tools", GetToolsHandler(server))
