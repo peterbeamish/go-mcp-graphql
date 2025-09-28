@@ -742,6 +742,12 @@ func (r *queryResolver) Personnel(ctx context.Context) ([]models.Personnel, erro
 	return r.personnel, nil
 }
 
+// EquipmentNotifications is the resolver for the equipmentNotifications field.
+func (r *queryResolver) EquipmentNotifications(ctx context.Context) ([]models.EquipmentNotification, error) {
+	notifications := r.GetEquipmentNotifications()
+	return notifications, nil
+}
+
 // Mutation returns graphql1.MutationResolver implementation.
 func (r *Resolver) Mutation() graphql1.MutationResolver { return &mutationResolver{r} }
 

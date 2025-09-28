@@ -173,6 +173,19 @@ type ComplexityRoot struct {
 		Type               func(childComplexity int) int
 	}
 
+	MaintenanceReminder struct {
+		Acknowledged   func(childComplexity int) int
+		AcknowledgedAt func(childComplexity int) int
+		AcknowledgedBy func(childComplexity int) int
+		CreatedAt      func(childComplexity int) int
+		Description    func(childComplexity int) int
+		Equipment      func(childComplexity int) int
+		ID             func(childComplexity int) int
+		Priority       func(childComplexity int) int
+		ScheduledDate  func(childComplexity int) int
+		Type           func(childComplexity int) int
+	}
+
 	Manager struct {
 		Department    func(childComplexity int) int
 		DirectReports func(childComplexity int) int
@@ -214,9 +227,25 @@ type ComplexityRoot struct {
 		Value       func(childComplexity int) int
 	}
 
+	PerformanceAlert struct {
+		Acknowledged   func(childComplexity int) int
+		AcknowledgedAt func(childComplexity int) int
+		AcknowledgedBy func(childComplexity int) int
+		CurrentValue   func(childComplexity int) int
+		Description    func(childComplexity int) int
+		Equipment      func(childComplexity int) int
+		ExpectedValue  func(childComplexity int) int
+		GeneratedAt    func(childComplexity int) int
+		ID             func(childComplexity int) int
+		MetricType     func(childComplexity int) int
+		Severity       func(childComplexity int) int
+		Threshold      func(childComplexity int) int
+	}
+
 	Query struct {
 		Equipment                     func(childComplexity int) int
 		EquipmentByID                 func(childComplexity int, id string) int
+		EquipmentNotifications        func(childComplexity int) int
 		Facilities                    func(childComplexity int) int
 		FacilityByID                  func(childComplexity int, id string) int
 		FacilityStatus                func(childComplexity int, facilityID string) int
@@ -224,6 +253,17 @@ type ComplexityRoot struct {
 		MaintenanceRecordsByEquipment func(childComplexity int, equipmentID string) int
 		OperationalMetrics            func(childComplexity int) int
 		Personnel                     func(childComplexity int) int
+	}
+
+	StatusUpdate struct {
+		ChangedAt      func(childComplexity int) int
+		ChangedBy      func(childComplexity int) int
+		Description    func(childComplexity int) int
+		Equipment      func(childComplexity int) int
+		ID             func(childComplexity int) int
+		NewStatus      func(childComplexity int) int
+		Notes          func(childComplexity int) int
+		PreviousStatus func(childComplexity int) int
 	}
 
 	TemperatureRange struct {
@@ -258,6 +298,7 @@ type QueryResolver interface {
 	OperationalMetrics(ctx context.Context) ([]*models.OperationalMetric, error)
 	FacilityStatus(ctx context.Context, facilityID string) (*models.FacilityStatus, error)
 	Personnel(ctx context.Context) ([]models.Personnel, error)
+	EquipmentNotifications(ctx context.Context) ([]models.EquipmentNotification, error)
 }
 
 type executableSchema struct {
@@ -854,6 +895,67 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.MaintenanceRecord.Type(childComplexity), true
 
+	case "MaintenanceReminder.acknowledged":
+		if e.complexity.MaintenanceReminder.Acknowledged == nil {
+			break
+		}
+
+		return e.complexity.MaintenanceReminder.Acknowledged(childComplexity), true
+	case "MaintenanceReminder.acknowledgedAt":
+		if e.complexity.MaintenanceReminder.AcknowledgedAt == nil {
+			break
+		}
+
+		return e.complexity.MaintenanceReminder.AcknowledgedAt(childComplexity), true
+	case "MaintenanceReminder.acknowledgedBy":
+		if e.complexity.MaintenanceReminder.AcknowledgedBy == nil {
+			break
+		}
+
+		return e.complexity.MaintenanceReminder.AcknowledgedBy(childComplexity), true
+	case "MaintenanceReminder.createdAt":
+		if e.complexity.MaintenanceReminder.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.MaintenanceReminder.CreatedAt(childComplexity), true
+	case "MaintenanceReminder.description":
+		if e.complexity.MaintenanceReminder.Description == nil {
+			break
+		}
+
+		return e.complexity.MaintenanceReminder.Description(childComplexity), true
+	case "MaintenanceReminder.equipment":
+		if e.complexity.MaintenanceReminder.Equipment == nil {
+			break
+		}
+
+		return e.complexity.MaintenanceReminder.Equipment(childComplexity), true
+	case "MaintenanceReminder.id":
+		if e.complexity.MaintenanceReminder.ID == nil {
+			break
+		}
+
+		return e.complexity.MaintenanceReminder.ID(childComplexity), true
+	case "MaintenanceReminder.priority":
+		if e.complexity.MaintenanceReminder.Priority == nil {
+			break
+		}
+
+		return e.complexity.MaintenanceReminder.Priority(childComplexity), true
+	case "MaintenanceReminder.scheduledDate":
+		if e.complexity.MaintenanceReminder.ScheduledDate == nil {
+			break
+		}
+
+		return e.complexity.MaintenanceReminder.ScheduledDate(childComplexity), true
+	case "MaintenanceReminder.type":
+		if e.complexity.MaintenanceReminder.Type == nil {
+			break
+		}
+
+		return e.complexity.MaintenanceReminder.Type(childComplexity), true
+
 	case "Manager.department":
 		if e.complexity.Manager.Department == nil {
 			break
@@ -1119,6 +1221,79 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.OperationalMetric.Value(childComplexity), true
 
+	case "PerformanceAlert.acknowledged":
+		if e.complexity.PerformanceAlert.Acknowledged == nil {
+			break
+		}
+
+		return e.complexity.PerformanceAlert.Acknowledged(childComplexity), true
+	case "PerformanceAlert.acknowledgedAt":
+		if e.complexity.PerformanceAlert.AcknowledgedAt == nil {
+			break
+		}
+
+		return e.complexity.PerformanceAlert.AcknowledgedAt(childComplexity), true
+	case "PerformanceAlert.acknowledgedBy":
+		if e.complexity.PerformanceAlert.AcknowledgedBy == nil {
+			break
+		}
+
+		return e.complexity.PerformanceAlert.AcknowledgedBy(childComplexity), true
+	case "PerformanceAlert.currentValue":
+		if e.complexity.PerformanceAlert.CurrentValue == nil {
+			break
+		}
+
+		return e.complexity.PerformanceAlert.CurrentValue(childComplexity), true
+	case "PerformanceAlert.description":
+		if e.complexity.PerformanceAlert.Description == nil {
+			break
+		}
+
+		return e.complexity.PerformanceAlert.Description(childComplexity), true
+	case "PerformanceAlert.equipment":
+		if e.complexity.PerformanceAlert.Equipment == nil {
+			break
+		}
+
+		return e.complexity.PerformanceAlert.Equipment(childComplexity), true
+	case "PerformanceAlert.expectedValue":
+		if e.complexity.PerformanceAlert.ExpectedValue == nil {
+			break
+		}
+
+		return e.complexity.PerformanceAlert.ExpectedValue(childComplexity), true
+	case "PerformanceAlert.generatedAt":
+		if e.complexity.PerformanceAlert.GeneratedAt == nil {
+			break
+		}
+
+		return e.complexity.PerformanceAlert.GeneratedAt(childComplexity), true
+	case "PerformanceAlert.id":
+		if e.complexity.PerformanceAlert.ID == nil {
+			break
+		}
+
+		return e.complexity.PerformanceAlert.ID(childComplexity), true
+	case "PerformanceAlert.metricType":
+		if e.complexity.PerformanceAlert.MetricType == nil {
+			break
+		}
+
+		return e.complexity.PerformanceAlert.MetricType(childComplexity), true
+	case "PerformanceAlert.severity":
+		if e.complexity.PerformanceAlert.Severity == nil {
+			break
+		}
+
+		return e.complexity.PerformanceAlert.Severity(childComplexity), true
+	case "PerformanceAlert.threshold":
+		if e.complexity.PerformanceAlert.Threshold == nil {
+			break
+		}
+
+		return e.complexity.PerformanceAlert.Threshold(childComplexity), true
+
 	case "Query.equipment":
 		if e.complexity.Query.Equipment == nil {
 			break
@@ -1136,6 +1311,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.EquipmentByID(childComplexity, args["id"].(string)), true
+	case "Query.equipmentNotifications":
+		if e.complexity.Query.EquipmentNotifications == nil {
+			break
+		}
+
+		return e.complexity.Query.EquipmentNotifications(childComplexity), true
 	case "Query.facilities":
 		if e.complexity.Query.Facilities == nil {
 			break
@@ -1193,6 +1374,55 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.Personnel(childComplexity), true
+
+	case "StatusUpdate.changedAt":
+		if e.complexity.StatusUpdate.ChangedAt == nil {
+			break
+		}
+
+		return e.complexity.StatusUpdate.ChangedAt(childComplexity), true
+	case "StatusUpdate.changedBy":
+		if e.complexity.StatusUpdate.ChangedBy == nil {
+			break
+		}
+
+		return e.complexity.StatusUpdate.ChangedBy(childComplexity), true
+	case "StatusUpdate.description":
+		if e.complexity.StatusUpdate.Description == nil {
+			break
+		}
+
+		return e.complexity.StatusUpdate.Description(childComplexity), true
+	case "StatusUpdate.equipment":
+		if e.complexity.StatusUpdate.Equipment == nil {
+			break
+		}
+
+		return e.complexity.StatusUpdate.Equipment(childComplexity), true
+	case "StatusUpdate.id":
+		if e.complexity.StatusUpdate.ID == nil {
+			break
+		}
+
+		return e.complexity.StatusUpdate.ID(childComplexity), true
+	case "StatusUpdate.newStatus":
+		if e.complexity.StatusUpdate.NewStatus == nil {
+			break
+		}
+
+		return e.complexity.StatusUpdate.NewStatus(childComplexity), true
+	case "StatusUpdate.notes":
+		if e.complexity.StatusUpdate.Notes == nil {
+			break
+		}
+
+		return e.complexity.StatusUpdate.Notes(childComplexity), true
+	case "StatusUpdate.previousStatus":
+		if e.complexity.StatusUpdate.PreviousStatus == nil {
+			break
+		}
+
+		return e.complexity.StatusUpdate.PreviousStatus(childComplexity), true
 
 	case "TemperatureRange.max":
 		if e.complexity.TemperatureRange.Max == nil {
@@ -1390,6 +1620,12 @@ type Query {
   Returns a comprehensive list of all personnel (managers and associates) in the system.
   """
   personnel: [Personnel!]!
+  
+  """
+  Retrieve all equipment notifications across the system.
+  Returns a collection of different types of notifications including alerts, maintenance reminders, and status updates.
+  """
+  equipmentNotifications: [EquipmentNotification!]!
 }
 
 """
@@ -1932,6 +2168,122 @@ type ElectricalSpecs {
   frequency: Float!
 }
 
+# Union Types
+
+"""
+Union type representing different types of equipment notifications.
+Showcases various notification types that can be sent to operators and managers.
+"""
+union EquipmentNotification = EquipmentAlert | MaintenanceReminder | StatusUpdate | PerformanceAlert
+
+"""
+Represents a maintenance reminder notification.
+Sent to remind personnel about upcoming or overdue maintenance activities.
+"""
+type MaintenanceReminder {
+  """Unique identifier for the reminder"""
+  id: ID!
+  
+  """Equipment this reminder relates to"""
+  equipment: Equipment!
+  
+  """Type of maintenance reminder"""
+  type: MaintenanceReminderType!
+  
+  """Priority level of the reminder"""
+  priority: MaintenancePriority!
+  
+  """Description of the maintenance reminder"""
+  description: String!
+  
+  """Date when the reminder was created"""
+  createdAt: String!
+  
+  """Scheduled maintenance date"""
+  scheduledDate: String!
+  
+  """Whether the reminder has been acknowledged"""
+  acknowledged: Boolean!
+  
+  """Date when the reminder was acknowledged"""
+  acknowledgedAt: String
+  
+  """Person who acknowledged the reminder"""
+  acknowledgedBy: String
+}
+
+"""
+Represents a status update notification.
+Sent when equipment status changes or important operational updates occur.
+"""
+type StatusUpdate {
+  """Unique identifier for the status update"""
+  id: ID!
+  
+  """Equipment this update relates to"""
+  equipment: Equipment!
+  
+  """Previous status of the equipment"""
+  previousStatus: EquipmentStatus!
+  
+  """New status of the equipment"""
+  newStatus: EquipmentStatus!
+  
+  """Description of the status change"""
+  description: String!
+  
+  """Date and time when the status changed"""
+  changedAt: String!
+  
+  """Person who initiated the status change"""
+  changedBy: String
+  
+  """Additional notes about the status change"""
+  notes: String
+}
+
+"""
+Represents a performance alert notification.
+Sent when equipment performance metrics exceed or fall below expected thresholds.
+"""
+type PerformanceAlert {
+  """Unique identifier for the performance alert"""
+  id: ID!
+  
+  """Equipment this alert relates to"""
+  equipment: Equipment!
+  
+  """Type of performance metric that triggered the alert"""
+  metricType: MetricType!
+  
+  """Current value of the metric"""
+  currentValue: Float!
+  
+  """Expected or target value for the metric"""
+  expectedValue: Float!
+  
+  """Threshold that was exceeded"""
+  threshold: Float!
+  
+  """Severity level of the performance alert"""
+  severity: AlertSeverity!
+  
+  """Description of the performance issue"""
+  description: String!
+  
+  """Date and time when the alert was generated"""
+  generatedAt: String!
+  
+  """Whether the alert has been acknowledged"""
+  acknowledged: Boolean!
+  
+  """Date when the alert was acknowledged"""
+  acknowledgedAt: String
+  
+  """Person who acknowledged the alert"""
+  acknowledgedBy: String
+}
+
 # Enums
 
 """
@@ -2217,6 +2569,30 @@ enum PersonnelStatus {
   
   """Personnel has been terminated"""
   TERMINATED
+}
+
+"""
+Types of maintenance reminder notifications.
+Categorizes different types of maintenance reminders.
+"""
+enum MaintenanceReminderType {
+  """Reminder for upcoming scheduled maintenance"""
+  UPCOMING_MAINTENANCE
+  
+  """Reminder for overdue maintenance"""
+  OVERDUE_MAINTENANCE
+  
+  """Reminder for routine inspection"""
+  INSPECTION_DUE
+  
+  """Reminder for calibration due"""
+  CALIBRATION_DUE
+  
+  """Reminder for parts replacement"""
+  PARTS_REPLACEMENT_DUE
+  
+  """Reminder for safety check"""
+  SAFETY_CHECK_DUE
 }
 
 # Input Types
@@ -5935,6 +6311,332 @@ func (ec *executionContext) fieldContext_MaintenanceRecord_notes(_ context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _MaintenanceReminder_id(ctx context.Context, field graphql.CollectedField, obj *models.MaintenanceReminder) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MaintenanceReminder_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MaintenanceReminder_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MaintenanceReminder",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MaintenanceReminder_equipment(ctx context.Context, field graphql.CollectedField, obj *models.MaintenanceReminder) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MaintenanceReminder_equipment,
+		func(ctx context.Context) (any, error) {
+			return obj.Equipment, nil
+		},
+		nil,
+		ec.marshalNEquipment2ᚖgithubᚗcomᚋpeterbeamishᚋgoᚑmcpᚑgraphqlᚋexampleᚋgqlgenᚑserverᚋmodelsᚐEquipment,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MaintenanceReminder_equipment(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MaintenanceReminder",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Equipment_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Equipment_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Equipment_description(ctx, field)
+			case "manufacturer":
+				return ec.fieldContext_Equipment_manufacturer(ctx, field)
+			case "model":
+				return ec.fieldContext_Equipment_model(ctx, field)
+			case "serialNumber":
+				return ec.fieldContext_Equipment_serialNumber(ctx, field)
+			case "type":
+				return ec.fieldContext_Equipment_type(ctx, field)
+			case "status":
+				return ec.fieldContext_Equipment_status(ctx, field)
+			case "facility":
+				return ec.fieldContext_Equipment_facility(ctx, field)
+			case "specifications":
+				return ec.fieldContext_Equipment_specifications(ctx, field)
+			case "installedAt":
+				return ec.fieldContext_Equipment_installedAt(ctx, field)
+			case "lastMaintenanceAt":
+				return ec.fieldContext_Equipment_lastMaintenanceAt(ctx, field)
+			case "nextMaintenanceAt":
+				return ec.fieldContext_Equipment_nextMaintenanceAt(ctx, field)
+			case "efficiency":
+				return ec.fieldContext_Equipment_efficiency(ctx, field)
+			case "totalOperatingHours":
+				return ec.fieldContext_Equipment_totalOperatingHours(ctx, field)
+			case "maintenanceRecords":
+				return ec.fieldContext_Equipment_maintenanceRecords(ctx, field)
+			case "alerts":
+				return ec.fieldContext_Equipment_alerts(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Equipment", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MaintenanceReminder_type(ctx context.Context, field graphql.CollectedField, obj *models.MaintenanceReminder) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MaintenanceReminder_type,
+		func(ctx context.Context) (any, error) {
+			return obj.Type, nil
+		},
+		nil,
+		ec.marshalNMaintenanceReminderType2githubᚗcomᚋpeterbeamishᚋgoᚑmcpᚑgraphqlᚋexampleᚋgqlgenᚑserverᚋmodelsᚐMaintenanceReminderType,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MaintenanceReminder_type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MaintenanceReminder",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type MaintenanceReminderType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MaintenanceReminder_priority(ctx context.Context, field graphql.CollectedField, obj *models.MaintenanceReminder) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MaintenanceReminder_priority,
+		func(ctx context.Context) (any, error) {
+			return obj.Priority, nil
+		},
+		nil,
+		ec.marshalNMaintenancePriority2githubᚗcomᚋpeterbeamishᚋgoᚑmcpᚑgraphqlᚋexampleᚋgqlgenᚑserverᚋmodelsᚐMaintenancePriority,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MaintenanceReminder_priority(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MaintenanceReminder",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type MaintenancePriority does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MaintenanceReminder_description(ctx context.Context, field graphql.CollectedField, obj *models.MaintenanceReminder) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MaintenanceReminder_description,
+		func(ctx context.Context) (any, error) {
+			return obj.Description, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MaintenanceReminder_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MaintenanceReminder",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MaintenanceReminder_createdAt(ctx context.Context, field graphql.CollectedField, obj *models.MaintenanceReminder) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MaintenanceReminder_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MaintenanceReminder_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MaintenanceReminder",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MaintenanceReminder_scheduledDate(ctx context.Context, field graphql.CollectedField, obj *models.MaintenanceReminder) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MaintenanceReminder_scheduledDate,
+		func(ctx context.Context) (any, error) {
+			return obj.ScheduledDate, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MaintenanceReminder_scheduledDate(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MaintenanceReminder",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MaintenanceReminder_acknowledged(ctx context.Context, field graphql.CollectedField, obj *models.MaintenanceReminder) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MaintenanceReminder_acknowledged,
+		func(ctx context.Context) (any, error) {
+			return obj.Acknowledged, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MaintenanceReminder_acknowledged(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MaintenanceReminder",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MaintenanceReminder_acknowledgedAt(ctx context.Context, field graphql.CollectedField, obj *models.MaintenanceReminder) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MaintenanceReminder_acknowledgedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.AcknowledgedAt, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_MaintenanceReminder_acknowledgedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MaintenanceReminder",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MaintenanceReminder_acknowledgedBy(ctx context.Context, field graphql.CollectedField, obj *models.MaintenanceReminder) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MaintenanceReminder_acknowledgedBy,
+		func(ctx context.Context) (any, error) {
+			return obj.AcknowledgedBy, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_MaintenanceReminder_acknowledgedBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MaintenanceReminder",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Manager_id(ctx context.Context, field graphql.CollectedField, obj *models.Manager) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -7377,6 +8079,390 @@ func (ec *executionContext) fieldContext_OperationalMetric_notes(_ context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _PerformanceAlert_id(ctx context.Context, field graphql.CollectedField, obj *models.PerformanceAlert) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PerformanceAlert_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PerformanceAlert_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformanceAlert",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PerformanceAlert_equipment(ctx context.Context, field graphql.CollectedField, obj *models.PerformanceAlert) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PerformanceAlert_equipment,
+		func(ctx context.Context) (any, error) {
+			return obj.Equipment, nil
+		},
+		nil,
+		ec.marshalNEquipment2ᚖgithubᚗcomᚋpeterbeamishᚋgoᚑmcpᚑgraphqlᚋexampleᚋgqlgenᚑserverᚋmodelsᚐEquipment,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PerformanceAlert_equipment(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformanceAlert",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Equipment_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Equipment_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Equipment_description(ctx, field)
+			case "manufacturer":
+				return ec.fieldContext_Equipment_manufacturer(ctx, field)
+			case "model":
+				return ec.fieldContext_Equipment_model(ctx, field)
+			case "serialNumber":
+				return ec.fieldContext_Equipment_serialNumber(ctx, field)
+			case "type":
+				return ec.fieldContext_Equipment_type(ctx, field)
+			case "status":
+				return ec.fieldContext_Equipment_status(ctx, field)
+			case "facility":
+				return ec.fieldContext_Equipment_facility(ctx, field)
+			case "specifications":
+				return ec.fieldContext_Equipment_specifications(ctx, field)
+			case "installedAt":
+				return ec.fieldContext_Equipment_installedAt(ctx, field)
+			case "lastMaintenanceAt":
+				return ec.fieldContext_Equipment_lastMaintenanceAt(ctx, field)
+			case "nextMaintenanceAt":
+				return ec.fieldContext_Equipment_nextMaintenanceAt(ctx, field)
+			case "efficiency":
+				return ec.fieldContext_Equipment_efficiency(ctx, field)
+			case "totalOperatingHours":
+				return ec.fieldContext_Equipment_totalOperatingHours(ctx, field)
+			case "maintenanceRecords":
+				return ec.fieldContext_Equipment_maintenanceRecords(ctx, field)
+			case "alerts":
+				return ec.fieldContext_Equipment_alerts(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Equipment", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PerformanceAlert_metricType(ctx context.Context, field graphql.CollectedField, obj *models.PerformanceAlert) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PerformanceAlert_metricType,
+		func(ctx context.Context) (any, error) {
+			return obj.MetricType, nil
+		},
+		nil,
+		ec.marshalNMetricType2githubᚗcomᚋpeterbeamishᚋgoᚑmcpᚑgraphqlᚋexampleᚋgqlgenᚑserverᚋmodelsᚐMetricType,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PerformanceAlert_metricType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformanceAlert",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type MetricType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PerformanceAlert_currentValue(ctx context.Context, field graphql.CollectedField, obj *models.PerformanceAlert) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PerformanceAlert_currentValue,
+		func(ctx context.Context) (any, error) {
+			return obj.CurrentValue, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PerformanceAlert_currentValue(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformanceAlert",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PerformanceAlert_expectedValue(ctx context.Context, field graphql.CollectedField, obj *models.PerformanceAlert) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PerformanceAlert_expectedValue,
+		func(ctx context.Context) (any, error) {
+			return obj.ExpectedValue, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PerformanceAlert_expectedValue(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformanceAlert",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PerformanceAlert_threshold(ctx context.Context, field graphql.CollectedField, obj *models.PerformanceAlert) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PerformanceAlert_threshold,
+		func(ctx context.Context) (any, error) {
+			return obj.Threshold, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PerformanceAlert_threshold(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformanceAlert",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PerformanceAlert_severity(ctx context.Context, field graphql.CollectedField, obj *models.PerformanceAlert) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PerformanceAlert_severity,
+		func(ctx context.Context) (any, error) {
+			return obj.Severity, nil
+		},
+		nil,
+		ec.marshalNAlertSeverity2githubᚗcomᚋpeterbeamishᚋgoᚑmcpᚑgraphqlᚋexampleᚋgqlgenᚑserverᚋmodelsᚐAlertSeverity,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PerformanceAlert_severity(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformanceAlert",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type AlertSeverity does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PerformanceAlert_description(ctx context.Context, field graphql.CollectedField, obj *models.PerformanceAlert) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PerformanceAlert_description,
+		func(ctx context.Context) (any, error) {
+			return obj.Description, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PerformanceAlert_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformanceAlert",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PerformanceAlert_generatedAt(ctx context.Context, field graphql.CollectedField, obj *models.PerformanceAlert) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PerformanceAlert_generatedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.GeneratedAt, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PerformanceAlert_generatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformanceAlert",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PerformanceAlert_acknowledged(ctx context.Context, field graphql.CollectedField, obj *models.PerformanceAlert) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PerformanceAlert_acknowledged,
+		func(ctx context.Context) (any, error) {
+			return obj.Acknowledged, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PerformanceAlert_acknowledged(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformanceAlert",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PerformanceAlert_acknowledgedAt(ctx context.Context, field graphql.CollectedField, obj *models.PerformanceAlert) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PerformanceAlert_acknowledgedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.AcknowledgedAt, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_PerformanceAlert_acknowledgedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformanceAlert",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PerformanceAlert_acknowledgedBy(ctx context.Context, field graphql.CollectedField, obj *models.PerformanceAlert) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PerformanceAlert_acknowledgedBy,
+		func(ctx context.Context) (any, error) {
+			return obj.AcknowledgedBy, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_PerformanceAlert_acknowledgedBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformanceAlert",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_equipment(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -7910,6 +8996,35 @@ func (ec *executionContext) fieldContext_Query_personnel(_ context.Context, fiel
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_equipmentNotifications(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_equipmentNotifications,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Query().EquipmentNotifications(ctx)
+		},
+		nil,
+		ec.marshalNEquipmentNotification2ᚕgithubᚗcomᚋpeterbeamishᚋgoᚑmcpᚑgraphqlᚋexampleᚋgqlgenᚑserverᚋmodelsᚐEquipmentNotificationᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_equipmentNotifications(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type EquipmentNotification does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -8013,6 +9128,274 @@ func (ec *executionContext) fieldContext_Query___schema(_ context.Context, field
 				return ec.fieldContext___Schema_directives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Schema", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StatusUpdate_id(ctx context.Context, field graphql.CollectedField, obj *models.StatusUpdate) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StatusUpdate_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_StatusUpdate_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StatusUpdate",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StatusUpdate_equipment(ctx context.Context, field graphql.CollectedField, obj *models.StatusUpdate) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StatusUpdate_equipment,
+		func(ctx context.Context) (any, error) {
+			return obj.Equipment, nil
+		},
+		nil,
+		ec.marshalNEquipment2ᚖgithubᚗcomᚋpeterbeamishᚋgoᚑmcpᚑgraphqlᚋexampleᚋgqlgenᚑserverᚋmodelsᚐEquipment,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_StatusUpdate_equipment(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StatusUpdate",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Equipment_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Equipment_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Equipment_description(ctx, field)
+			case "manufacturer":
+				return ec.fieldContext_Equipment_manufacturer(ctx, field)
+			case "model":
+				return ec.fieldContext_Equipment_model(ctx, field)
+			case "serialNumber":
+				return ec.fieldContext_Equipment_serialNumber(ctx, field)
+			case "type":
+				return ec.fieldContext_Equipment_type(ctx, field)
+			case "status":
+				return ec.fieldContext_Equipment_status(ctx, field)
+			case "facility":
+				return ec.fieldContext_Equipment_facility(ctx, field)
+			case "specifications":
+				return ec.fieldContext_Equipment_specifications(ctx, field)
+			case "installedAt":
+				return ec.fieldContext_Equipment_installedAt(ctx, field)
+			case "lastMaintenanceAt":
+				return ec.fieldContext_Equipment_lastMaintenanceAt(ctx, field)
+			case "nextMaintenanceAt":
+				return ec.fieldContext_Equipment_nextMaintenanceAt(ctx, field)
+			case "efficiency":
+				return ec.fieldContext_Equipment_efficiency(ctx, field)
+			case "totalOperatingHours":
+				return ec.fieldContext_Equipment_totalOperatingHours(ctx, field)
+			case "maintenanceRecords":
+				return ec.fieldContext_Equipment_maintenanceRecords(ctx, field)
+			case "alerts":
+				return ec.fieldContext_Equipment_alerts(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Equipment", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StatusUpdate_previousStatus(ctx context.Context, field graphql.CollectedField, obj *models.StatusUpdate) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StatusUpdate_previousStatus,
+		func(ctx context.Context) (any, error) {
+			return obj.PreviousStatus, nil
+		},
+		nil,
+		ec.marshalNEquipmentStatus2githubᚗcomᚋpeterbeamishᚋgoᚑmcpᚑgraphqlᚋexampleᚋgqlgenᚑserverᚋmodelsᚐEquipmentStatus,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_StatusUpdate_previousStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StatusUpdate",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type EquipmentStatus does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StatusUpdate_newStatus(ctx context.Context, field graphql.CollectedField, obj *models.StatusUpdate) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StatusUpdate_newStatus,
+		func(ctx context.Context) (any, error) {
+			return obj.NewStatus, nil
+		},
+		nil,
+		ec.marshalNEquipmentStatus2githubᚗcomᚋpeterbeamishᚋgoᚑmcpᚑgraphqlᚋexampleᚋgqlgenᚑserverᚋmodelsᚐEquipmentStatus,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_StatusUpdate_newStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StatusUpdate",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type EquipmentStatus does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StatusUpdate_description(ctx context.Context, field graphql.CollectedField, obj *models.StatusUpdate) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StatusUpdate_description,
+		func(ctx context.Context) (any, error) {
+			return obj.Description, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_StatusUpdate_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StatusUpdate",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StatusUpdate_changedAt(ctx context.Context, field graphql.CollectedField, obj *models.StatusUpdate) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StatusUpdate_changedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.ChangedAt, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_StatusUpdate_changedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StatusUpdate",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StatusUpdate_changedBy(ctx context.Context, field graphql.CollectedField, obj *models.StatusUpdate) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StatusUpdate_changedBy,
+		func(ctx context.Context) (any, error) {
+			return obj.ChangedBy, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_StatusUpdate_changedBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StatusUpdate",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StatusUpdate_notes(ctx context.Context, field graphql.CollectedField, obj *models.StatusUpdate) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StatusUpdate_notes,
+		func(ctx context.Context) (any, error) {
+			return obj.Notes, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_StatusUpdate_notes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StatusUpdate",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -10511,6 +11894,43 @@ func (ec *executionContext) unmarshalInputUpdateMaintenanceRecordInput(ctx conte
 
 // region    ************************** interface.gotpl ***************************
 
+func (ec *executionContext) _EquipmentNotification(ctx context.Context, sel ast.SelectionSet, obj models.EquipmentNotification) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case models.StatusUpdate:
+		return ec._StatusUpdate(ctx, sel, &obj)
+	case *models.StatusUpdate:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._StatusUpdate(ctx, sel, obj)
+	case models.PerformanceAlert:
+		return ec._PerformanceAlert(ctx, sel, &obj)
+	case *models.PerformanceAlert:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._PerformanceAlert(ctx, sel, obj)
+	case models.MaintenanceReminder:
+		return ec._MaintenanceReminder(ctx, sel, &obj)
+	case *models.MaintenanceReminder:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._MaintenanceReminder(ctx, sel, obj)
+	case models.EquipmentAlert:
+		return ec._EquipmentAlert(ctx, sel, &obj)
+	case *models.EquipmentAlert:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._EquipmentAlert(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 func (ec *executionContext) _Personnel(ctx context.Context, sel ast.SelectionSet, obj models.Personnel) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -10878,7 +12298,7 @@ func (ec *executionContext) _Equipment(ctx context.Context, sel ast.SelectionSet
 	return out
 }
 
-var equipmentAlertImplementors = []string{"EquipmentAlert"}
+var equipmentAlertImplementors = []string{"EquipmentAlert", "EquipmentNotification"}
 
 func (ec *executionContext) _EquipmentAlert(ctx context.Context, sel ast.SelectionSet, obj *models.EquipmentAlert) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, equipmentAlertImplementors)
@@ -11343,6 +12763,84 @@ func (ec *executionContext) _MaintenanceRecord(ctx context.Context, sel ast.Sele
 	return out
 }
 
+var maintenanceReminderImplementors = []string{"MaintenanceReminder", "EquipmentNotification"}
+
+func (ec *executionContext) _MaintenanceReminder(ctx context.Context, sel ast.SelectionSet, obj *models.MaintenanceReminder) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, maintenanceReminderImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MaintenanceReminder")
+		case "id":
+			out.Values[i] = ec._MaintenanceReminder_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "equipment":
+			out.Values[i] = ec._MaintenanceReminder_equipment(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "type":
+			out.Values[i] = ec._MaintenanceReminder_type(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "priority":
+			out.Values[i] = ec._MaintenanceReminder_priority(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "description":
+			out.Values[i] = ec._MaintenanceReminder_description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createdAt":
+			out.Values[i] = ec._MaintenanceReminder_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "scheduledDate":
+			out.Values[i] = ec._MaintenanceReminder_scheduledDate(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "acknowledged":
+			out.Values[i] = ec._MaintenanceReminder_acknowledged(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "acknowledgedAt":
+			out.Values[i] = ec._MaintenanceReminder_acknowledgedAt(ctx, field, obj)
+		case "acknowledgedBy":
+			out.Values[i] = ec._MaintenanceReminder_acknowledgedBy(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var managerImplementors = []string{"Manager", "Personnel"}
 
 func (ec *executionContext) _Manager(ctx context.Context, sel ast.SelectionSet, obj *models.Manager) graphql.Marshaler {
@@ -11635,6 +13133,94 @@ func (ec *executionContext) _OperationalMetric(ctx context.Context, sel ast.Sele
 	return out
 }
 
+var performanceAlertImplementors = []string{"PerformanceAlert", "EquipmentNotification"}
+
+func (ec *executionContext) _PerformanceAlert(ctx context.Context, sel ast.SelectionSet, obj *models.PerformanceAlert) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, performanceAlertImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PerformanceAlert")
+		case "id":
+			out.Values[i] = ec._PerformanceAlert_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "equipment":
+			out.Values[i] = ec._PerformanceAlert_equipment(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "metricType":
+			out.Values[i] = ec._PerformanceAlert_metricType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "currentValue":
+			out.Values[i] = ec._PerformanceAlert_currentValue(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "expectedValue":
+			out.Values[i] = ec._PerformanceAlert_expectedValue(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "threshold":
+			out.Values[i] = ec._PerformanceAlert_threshold(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "severity":
+			out.Values[i] = ec._PerformanceAlert_severity(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "description":
+			out.Values[i] = ec._PerformanceAlert_description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "generatedAt":
+			out.Values[i] = ec._PerformanceAlert_generatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "acknowledged":
+			out.Values[i] = ec._PerformanceAlert_acknowledged(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "acknowledgedAt":
+			out.Values[i] = ec._PerformanceAlert_acknowledgedAt(ctx, field, obj)
+		case "acknowledgedBy":
+			out.Values[i] = ec._PerformanceAlert_acknowledgedBy(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var queryImplementors = []string{"Query"}
 
 func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -11843,6 +13429,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "equipmentNotifications":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_equipmentNotifications(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -11851,6 +13459,74 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___schema(ctx, field)
 			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var statusUpdateImplementors = []string{"StatusUpdate", "EquipmentNotification"}
+
+func (ec *executionContext) _StatusUpdate(ctx context.Context, sel ast.SelectionSet, obj *models.StatusUpdate) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, statusUpdateImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("StatusUpdate")
+		case "id":
+			out.Values[i] = ec._StatusUpdate_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "equipment":
+			out.Values[i] = ec._StatusUpdate_equipment(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "previousStatus":
+			out.Values[i] = ec._StatusUpdate_previousStatus(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "newStatus":
+			out.Values[i] = ec._StatusUpdate_newStatus(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "description":
+			out.Values[i] = ec._StatusUpdate_description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "changedAt":
+			out.Values[i] = ec._StatusUpdate_changedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "changedBy":
+			out.Values[i] = ec._StatusUpdate_changedBy(ctx, field, obj)
+		case "notes":
+			out.Values[i] = ec._StatusUpdate_notes(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -12485,6 +14161,60 @@ func (ec *executionContext) marshalNEquipmentAlert2ᚖgithubᚗcomᚋpeterbeamis
 	return ec._EquipmentAlert(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNEquipmentNotification2githubᚗcomᚋpeterbeamishᚋgoᚑmcpᚑgraphqlᚋexampleᚋgqlgenᚑserverᚋmodelsᚐEquipmentNotification(ctx context.Context, sel ast.SelectionSet, v models.EquipmentNotification) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._EquipmentNotification(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNEquipmentNotification2ᚕgithubᚗcomᚋpeterbeamishᚋgoᚑmcpᚑgraphqlᚋexampleᚋgqlgenᚑserverᚋmodelsᚐEquipmentNotificationᚄ(ctx context.Context, sel ast.SelectionSet, v []models.EquipmentNotification) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNEquipmentNotification2githubᚗcomᚋpeterbeamishᚋgoᚑmcpᚑgraphqlᚋexampleᚋgqlgenᚑserverᚋmodelsᚐEquipmentNotification(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) marshalNEquipmentSpecifications2ᚖgithubᚗcomᚋpeterbeamishᚋgoᚑmcpᚑgraphqlᚋexampleᚋgqlgenᚑserverᚋmodelsᚐEquipmentSpecifications(ctx context.Context, sel ast.SelectionSet, v *models.EquipmentSpecifications) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -12717,6 +14447,16 @@ func (ec *executionContext) marshalNMaintenanceRecord2ᚖgithubᚗcomᚋpeterbea
 		return graphql.Null
 	}
 	return ec._MaintenanceRecord(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNMaintenanceReminderType2githubᚗcomᚋpeterbeamishᚋgoᚑmcpᚑgraphqlᚋexampleᚋgqlgenᚑserverᚋmodelsᚐMaintenanceReminderType(ctx context.Context, v any) (models.MaintenanceReminderType, error) {
+	var res models.MaintenanceReminderType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNMaintenanceReminderType2githubᚗcomᚋpeterbeamishᚋgoᚑmcpᚑgraphqlᚋexampleᚋgqlgenᚑserverᚋmodelsᚐMaintenanceReminderType(ctx context.Context, sel ast.SelectionSet, v models.MaintenanceReminderType) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) unmarshalNMaintenanceStatus2githubᚗcomᚋpeterbeamishᚋgoᚑmcpᚑgraphqlᚋexampleᚋgqlgenᚑserverᚋmodelsᚐMaintenanceStatus(ctx context.Context, v any) (models.MaintenanceStatus, error) {

@@ -9,6 +9,12 @@ import (
 	"strconv"
 )
 
+// Union type representing different types of equipment notifications.
+// Showcases various notification types that can be sent to operators and managers.
+type EquipmentNotification interface {
+	IsEquipmentNotification()
+}
+
 // Represents personnel working at a facility.
 // Interface for different types of facility personnel.
 type Personnel interface {
@@ -301,6 +307,8 @@ type EquipmentAlert struct {
 	ResolvedAt *string `json:"resolvedAt,omitempty"`
 }
 
+func (EquipmentAlert) IsEquipmentNotification() {}
+
 // Represents equipment specifications and technical parameters.
 // Contains detailed technical information about machinery capabilities.
 type EquipmentSpecifications struct {
@@ -450,6 +458,33 @@ type MaintenanceRecord struct {
 	Notes *string `json:"notes,omitempty"`
 }
 
+// Represents a maintenance reminder notification.
+// Sent to remind personnel about upcoming or overdue maintenance activities.
+type MaintenanceReminder struct {
+	// Unique identifier for the reminder
+	ID string `json:"id"`
+	// Equipment this reminder relates to
+	Equipment *Equipment `json:"equipment"`
+	// Type of maintenance reminder
+	Type MaintenanceReminderType `json:"type"`
+	// Priority level of the reminder
+	Priority MaintenancePriority `json:"priority"`
+	// Description of the maintenance reminder
+	Description string `json:"description"`
+	// Date when the reminder was created
+	CreatedAt string `json:"createdAt"`
+	// Scheduled maintenance date
+	ScheduledDate string `json:"scheduledDate"`
+	// Whether the reminder has been acknowledged
+	Acknowledged bool `json:"acknowledged"`
+	// Date when the reminder was acknowledged
+	AcknowledgedAt *string `json:"acknowledgedAt,omitempty"`
+	// Person who acknowledged the reminder
+	AcknowledgedBy *string `json:"acknowledgedBy,omitempty"`
+}
+
+func (MaintenanceReminder) IsEquipmentNotification() {}
+
 // Represents a manager at a facility.
 // Manages operations and oversees other personnel.
 type Manager struct {
@@ -521,6 +556,37 @@ type OperationalMetric struct {
 	Notes *string `json:"notes,omitempty"`
 }
 
+// Represents a performance alert notification.
+// Sent when equipment performance metrics exceed or fall below expected thresholds.
+type PerformanceAlert struct {
+	// Unique identifier for the performance alert
+	ID string `json:"id"`
+	// Equipment this alert relates to
+	Equipment *Equipment `json:"equipment"`
+	// Type of performance metric that triggered the alert
+	MetricType MetricType `json:"metricType"`
+	// Current value of the metric
+	CurrentValue float64 `json:"currentValue"`
+	// Expected or target value for the metric
+	ExpectedValue float64 `json:"expectedValue"`
+	// Threshold that was exceeded
+	Threshold float64 `json:"threshold"`
+	// Severity level of the performance alert
+	Severity AlertSeverity `json:"severity"`
+	// Description of the performance issue
+	Description string `json:"description"`
+	// Date and time when the alert was generated
+	GeneratedAt string `json:"generatedAt"`
+	// Whether the alert has been acknowledged
+	Acknowledged bool `json:"acknowledged"`
+	// Date when the alert was acknowledged
+	AcknowledgedAt *string `json:"acknowledgedAt,omitempty"`
+	// Person who acknowledged the alert
+	AcknowledgedBy *string `json:"acknowledgedBy,omitempty"`
+}
+
+func (PerformanceAlert) IsEquipmentNotification() {}
+
 // Root query type for retrieving industrial machinery data.
 // Provides access to equipment, facilities, maintenance records, and operational metrics.
 type Query struct {
@@ -563,6 +629,29 @@ type ScheduleMaintenanceInput struct {
 	// Required parts or materials
 	RequiredParts []string `json:"requiredParts,omitempty"`
 }
+
+// Represents a status update notification.
+// Sent when equipment status changes or important operational updates occur.
+type StatusUpdate struct {
+	// Unique identifier for the status update
+	ID string `json:"id"`
+	// Equipment this update relates to
+	Equipment *Equipment `json:"equipment"`
+	// Previous status of the equipment
+	PreviousStatus EquipmentStatus `json:"previousStatus"`
+	// New status of the equipment
+	NewStatus EquipmentStatus `json:"newStatus"`
+	// Description of the status change
+	Description string `json:"description"`
+	// Date and time when the status changed
+	ChangedAt string `json:"changedAt"`
+	// Person who initiated the status change
+	ChangedBy *string `json:"changedBy,omitempty"`
+	// Additional notes about the status change
+	Notes *string `json:"notes,omitempty"`
+}
+
+func (StatusUpdate) IsEquipmentNotification() {}
 
 // Represents temperature range specifications.
 // Defines minimum and maximum operating temperatures.
@@ -1096,6 +1185,77 @@ func (e *MaintenancePriority) UnmarshalJSON(b []byte) error {
 }
 
 func (e MaintenancePriority) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+// Types of maintenance reminder notifications.
+// Categorizes different types of maintenance reminders.
+type MaintenanceReminderType string
+
+const (
+	// Reminder for upcoming scheduled maintenance
+	MaintenanceReminderTypeUpcomingMaintenance MaintenanceReminderType = "UPCOMING_MAINTENANCE"
+	// Reminder for overdue maintenance
+	MaintenanceReminderTypeOverdueMaintenance MaintenanceReminderType = "OVERDUE_MAINTENANCE"
+	// Reminder for routine inspection
+	MaintenanceReminderTypeInspectionDue MaintenanceReminderType = "INSPECTION_DUE"
+	// Reminder for calibration due
+	MaintenanceReminderTypeCalibrationDue MaintenanceReminderType = "CALIBRATION_DUE"
+	// Reminder for parts replacement
+	MaintenanceReminderTypePartsReplacementDue MaintenanceReminderType = "PARTS_REPLACEMENT_DUE"
+	// Reminder for safety check
+	MaintenanceReminderTypeSafetyCheckDue MaintenanceReminderType = "SAFETY_CHECK_DUE"
+)
+
+var AllMaintenanceReminderType = []MaintenanceReminderType{
+	MaintenanceReminderTypeUpcomingMaintenance,
+	MaintenanceReminderTypeOverdueMaintenance,
+	MaintenanceReminderTypeInspectionDue,
+	MaintenanceReminderTypeCalibrationDue,
+	MaintenanceReminderTypePartsReplacementDue,
+	MaintenanceReminderTypeSafetyCheckDue,
+}
+
+func (e MaintenanceReminderType) IsValid() bool {
+	switch e {
+	case MaintenanceReminderTypeUpcomingMaintenance, MaintenanceReminderTypeOverdueMaintenance, MaintenanceReminderTypeInspectionDue, MaintenanceReminderTypeCalibrationDue, MaintenanceReminderTypePartsReplacementDue, MaintenanceReminderTypeSafetyCheckDue:
+		return true
+	}
+	return false
+}
+
+func (e MaintenanceReminderType) String() string {
+	return string(e)
+}
+
+func (e *MaintenanceReminderType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = MaintenanceReminderType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid MaintenanceReminderType", str)
+	}
+	return nil
+}
+
+func (e MaintenanceReminderType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *MaintenanceReminderType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e MaintenanceReminderType) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

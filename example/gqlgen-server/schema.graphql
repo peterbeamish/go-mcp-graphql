@@ -60,6 +60,12 @@ type Query {
   Returns a comprehensive list of all personnel (managers and associates) in the system.
   """
   personnel: [Personnel!]!
+  
+  """
+  Retrieve all equipment notifications across the system.
+  Returns a collection of different types of notifications including alerts, maintenance reminders, and status updates.
+  """
+  equipmentNotifications: [EquipmentNotification!]!
 }
 
 """
@@ -602,6 +608,122 @@ type ElectricalSpecs {
   frequency: Float!
 }
 
+# Union Types
+
+"""
+Union type representing different types of equipment notifications.
+Showcases various notification types that can be sent to operators and managers.
+"""
+union EquipmentNotification = EquipmentAlert | MaintenanceReminder | StatusUpdate | PerformanceAlert
+
+"""
+Represents a maintenance reminder notification.
+Sent to remind personnel about upcoming or overdue maintenance activities.
+"""
+type MaintenanceReminder {
+  """Unique identifier for the reminder"""
+  id: ID!
+  
+  """Equipment this reminder relates to"""
+  equipment: Equipment!
+  
+  """Type of maintenance reminder"""
+  type: MaintenanceReminderType!
+  
+  """Priority level of the reminder"""
+  priority: MaintenancePriority!
+  
+  """Description of the maintenance reminder"""
+  description: String!
+  
+  """Date when the reminder was created"""
+  createdAt: String!
+  
+  """Scheduled maintenance date"""
+  scheduledDate: String!
+  
+  """Whether the reminder has been acknowledged"""
+  acknowledged: Boolean!
+  
+  """Date when the reminder was acknowledged"""
+  acknowledgedAt: String
+  
+  """Person who acknowledged the reminder"""
+  acknowledgedBy: String
+}
+
+"""
+Represents a status update notification.
+Sent when equipment status changes or important operational updates occur.
+"""
+type StatusUpdate {
+  """Unique identifier for the status update"""
+  id: ID!
+  
+  """Equipment this update relates to"""
+  equipment: Equipment!
+  
+  """Previous status of the equipment"""
+  previousStatus: EquipmentStatus!
+  
+  """New status of the equipment"""
+  newStatus: EquipmentStatus!
+  
+  """Description of the status change"""
+  description: String!
+  
+  """Date and time when the status changed"""
+  changedAt: String!
+  
+  """Person who initiated the status change"""
+  changedBy: String
+  
+  """Additional notes about the status change"""
+  notes: String
+}
+
+"""
+Represents a performance alert notification.
+Sent when equipment performance metrics exceed or fall below expected thresholds.
+"""
+type PerformanceAlert {
+  """Unique identifier for the performance alert"""
+  id: ID!
+  
+  """Equipment this alert relates to"""
+  equipment: Equipment!
+  
+  """Type of performance metric that triggered the alert"""
+  metricType: MetricType!
+  
+  """Current value of the metric"""
+  currentValue: Float!
+  
+  """Expected or target value for the metric"""
+  expectedValue: Float!
+  
+  """Threshold that was exceeded"""
+  threshold: Float!
+  
+  """Severity level of the performance alert"""
+  severity: AlertSeverity!
+  
+  """Description of the performance issue"""
+  description: String!
+  
+  """Date and time when the alert was generated"""
+  generatedAt: String!
+  
+  """Whether the alert has been acknowledged"""
+  acknowledged: Boolean!
+  
+  """Date when the alert was acknowledged"""
+  acknowledgedAt: String
+  
+  """Person who acknowledged the alert"""
+  acknowledgedBy: String
+}
+
 # Enums
 
 """
@@ -887,6 +1009,30 @@ enum PersonnelStatus {
   
   """Personnel has been terminated"""
   TERMINATED
+}
+
+"""
+Types of maintenance reminder notifications.
+Categorizes different types of maintenance reminders.
+"""
+enum MaintenanceReminderType {
+  """Reminder for upcoming scheduled maintenance"""
+  UPCOMING_MAINTENANCE
+  
+  """Reminder for overdue maintenance"""
+  OVERDUE_MAINTENANCE
+  
+  """Reminder for routine inspection"""
+  INSPECTION_DUE
+  
+  """Reminder for calibration due"""
+  CALIBRATION_DUE
+  
+  """Reminder for parts replacement"""
+  PARTS_REPLACEMENT_DUE
+  
+  """Reminder for safety check"""
+  SAFETY_CHECK_DUE
 }
 
 # Input Types

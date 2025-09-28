@@ -11,24 +11,30 @@ import (
 // It serves as dependency injection for your app, add any dependencies you require here.
 
 type Resolver struct {
-	equipment          []*models.Equipment
-	facilities         []*models.Facility
-	maintenanceRecords []*models.MaintenanceRecord
-	operationalMetrics []*models.OperationalMetric
-	alerts             []*models.EquipmentAlert
-	personnel          []models.Personnel
-	managers           []*models.Manager
-	associates         []*models.Associate
+	equipment            []*models.Equipment
+	facilities           []*models.Facility
+	maintenanceRecords   []*models.MaintenanceRecord
+	operationalMetrics   []*models.OperationalMetric
+	alerts               []*models.EquipmentAlert
+	personnel            []models.Personnel
+	managers             []*models.Manager
+	associates           []*models.Associate
+	maintenanceReminders []*models.MaintenanceReminder
+	statusUpdates        []*models.StatusUpdate
+	performanceAlerts    []*models.PerformanceAlert
 }
 
 // NewResolver creates a new resolver with sample data
 func NewResolver() *Resolver {
 	r := &Resolver{
-		equipment:          make([]*models.Equipment, 0),
-		facilities:         make([]*models.Facility, 0),
-		maintenanceRecords: make([]*models.MaintenanceRecord, 0),
-		operationalMetrics: make([]*models.OperationalMetric, 0),
-		alerts:             make([]*models.EquipmentAlert, 0),
+		equipment:            make([]*models.Equipment, 0),
+		facilities:           make([]*models.Facility, 0),
+		maintenanceRecords:   make([]*models.MaintenanceRecord, 0),
+		operationalMetrics:   make([]*models.OperationalMetric, 0),
+		alerts:               make([]*models.EquipmentAlert, 0),
+		maintenanceReminders: make([]*models.MaintenanceReminder, 0),
+		statusUpdates:        make([]*models.StatusUpdate, 0),
+		performanceAlerts:    make([]*models.PerformanceAlert, 0),
 	}
 
 	// Initialize with sample data
@@ -254,6 +260,89 @@ func (r *Resolver) initializeSampleData() {
 	// Add personnel to facilities
 	facility1.Personnel = append(facility1.Personnel, manager1, associate1, associate3)
 	facility2.Personnel = append(facility2.Personnel, manager2, associate2)
+
+	// Create sample maintenance reminders
+	reminder1 := &models.MaintenanceReminder{
+		ID:            "reminder-1",
+		Equipment:     equipment1,
+		Type:          models.MaintenanceReminderTypeUpcomingMaintenance,
+		Priority:      models.MaintenancePriorityMedium,
+		Description:   "Scheduled preventive maintenance due in 2 weeks",
+		CreatedAt:     time.Now().Add(-1 * time.Hour).Format(time.RFC3339),
+		ScheduledDate: "2024-12-01",
+		Acknowledged:  false,
+	}
+
+	reminder2 := &models.MaintenanceReminder{
+		ID:             "reminder-2",
+		Equipment:      equipment2,
+		Type:           models.MaintenanceReminderTypeOverdueMaintenance,
+		Priority:       models.MaintenancePriorityHigh,
+		Description:    "Belt replacement maintenance is overdue",
+		CreatedAt:      time.Now().Add(-2 * time.Hour).Format(time.RFC3339),
+		ScheduledDate:  "2024-10-15",
+		Acknowledged:   true,
+		AcknowledgedAt: &[]string{time.Now().Add(-1 * time.Hour).Format(time.RFC3339)}[0],
+		AcknowledgedBy: &[]string{"Jane Doe"}[0],
+	}
+
+	r.maintenanceReminders = append(r.maintenanceReminders, reminder1, reminder2)
+
+	// Create sample status updates
+	statusUpdate1 := &models.StatusUpdate{
+		ID:             "status-1",
+		Equipment:      equipment1,
+		PreviousStatus: models.EquipmentStatusStopped,
+		NewStatus:      models.EquipmentStatusRunning,
+		Description:    "Equipment started after routine maintenance",
+		ChangedAt:      time.Now().Add(-30 * time.Minute).Format(time.RFC3339),
+		ChangedBy:      &[]string{"Mike Wilson"}[0],
+		Notes:          &[]string{"All systems operational, ready for production"}[0],
+	}
+
+	statusUpdate2 := &models.StatusUpdate{
+		ID:             "status-2",
+		Equipment:      equipment2,
+		PreviousStatus: models.EquipmentStatusRunning,
+		NewStatus:      models.EquipmentStatusMaintenance,
+		Description:    "Equipment taken offline for scheduled maintenance",
+		ChangedAt:      time.Now().Add(-1 * time.Hour).Format(time.RFC3339),
+		ChangedBy:      &[]string{"David Lee"}[0],
+		Notes:          &[]string{"Belt replacement and motor inspection in progress"}[0],
+	}
+
+	r.statusUpdates = append(r.statusUpdates, statusUpdate1, statusUpdate2)
+
+	// Create sample performance alerts
+	perfAlert1 := &models.PerformanceAlert{
+		ID:            "perf-alert-1",
+		Equipment:     equipment1,
+		MetricType:    models.MetricTypeEfficiency,
+		CurrentValue:  85.2,
+		ExpectedValue: 90.0,
+		Threshold:     88.0,
+		Severity:      models.AlertSeverityMedium,
+		Description:   "Equipment efficiency below expected threshold",
+		GeneratedAt:   time.Now().Add(-45 * time.Minute).Format(time.RFC3339),
+		Acknowledged:  false,
+	}
+
+	perfAlert2 := &models.PerformanceAlert{
+		ID:             "perf-alert-2",
+		Equipment:      equipment2,
+		MetricType:     models.MetricTypeVibration,
+		CurrentValue:   2.5,
+		ExpectedValue:  1.0,
+		Threshold:      2.0,
+		Severity:       models.AlertSeverityHigh,
+		Description:    "Excessive vibration detected in conveyor system",
+		GeneratedAt:    time.Now().Add(-15 * time.Minute).Format(time.RFC3339),
+		Acknowledged:   true,
+		AcknowledgedAt: &[]string{time.Now().Add(-5 * time.Minute).Format(time.RFC3339)}[0],
+		AcknowledgedBy: &[]string{"Sarah Johnson"}[0],
+	}
+
+	r.performanceAlerts = append(r.performanceAlerts, perfAlert1, perfAlert2)
 }
 
 // Helper methods for finding entities by ID
@@ -342,4 +431,31 @@ func (r *Resolver) removeAlertsForEquipment(equipmentID string) {
 		}
 	}
 	r.alerts = filtered
+}
+
+// GetEquipmentNotifications returns all equipment notifications (union type)
+func (r *Resolver) GetEquipmentNotifications() []models.EquipmentNotification {
+	var notifications []models.EquipmentNotification
+
+	// Add equipment alerts
+	for _, alert := range r.alerts {
+		notifications = append(notifications, alert)
+	}
+
+	// Add maintenance reminders
+	for _, reminder := range r.maintenanceReminders {
+		notifications = append(notifications, reminder)
+	}
+
+	// Add status updates
+	for _, statusUpdate := range r.statusUpdates {
+		notifications = append(notifications, statusUpdate)
+	}
+
+	// Add performance alerts
+	for _, perfAlert := range r.performanceAlerts {
+		notifications = append(notifications, perfAlert)
+	}
+
+	return notifications
 }
