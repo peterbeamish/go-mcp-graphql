@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"strings"
 	"time"
 
@@ -125,6 +126,10 @@ func (s *MCPGraphQLServer) addQueryTool(query *schema.Field) error {
 
 	// Create the handler function
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, input map[string]interface{}) (*mcp.CallToolResult, any, error) {
+		// Add passthru headers to context if available
+		if passthruHeaders := GetPassthruHeaders(ctx); passthruHeaders != nil {
+			ctx = AddPassthruHeadersToContext(ctx, passthruHeaders)
+		}
 		result, err := s.executeGraphQLOperation(ctx, query, input, "query")
 		return result, nil, err
 	}
@@ -161,6 +166,10 @@ func (s *MCPGraphQLServer) addMutationTool(mutation *schema.Field) error {
 
 	// Create the handler function
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, input map[string]interface{}) (*mcp.CallToolResult, any, error) {
+		// Add passthru headers to context if available
+		if passthruHeaders := GetPassthruHeaders(ctx); passthruHeaders != nil {
+			ctx = AddPassthruHeadersToContext(ctx, passthruHeaders)
+		}
 		result, err := s.executeGraphQLOperation(ctx, mutation, input, "mutation")
 		return result, nil, err
 	}
@@ -351,4 +360,20 @@ func (s *MCPGraphQLServer) GetSchema() *schema.Schema {
 // GetExecutor returns the GraphQL executor
 func (s *MCPGraphQLServer) GetExecutor() GraphQLExecutor {
 	return s.executor
+}
+
+// ExtractPassthruHeaders extracts the configured passthru headers from the request
+func (s *MCPGraphQLServer) ExtractPassthruHeaders(r *http.Request) map[string]string {
+	if len(s.options.PassthruHeaders) == 0 {
+		return nil
+	}
+
+	headers := make(map[string]string)
+	for _, headerName := range s.options.PassthruHeaders {
+		if value := r.Header.Get(headerName); value != "" {
+			headers[headerName] = value
+		}
+	}
+
+	return headers
 }

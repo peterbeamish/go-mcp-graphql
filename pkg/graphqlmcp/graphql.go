@@ -420,8 +420,17 @@ func (c *GraphQLClient) executeRequest(ctx context.Context, req *GraphQLRequest,
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
+
+	// Set default headers from client
 	for key, value := range c.headers {
 		httpReq.Header.Set(key, value)
+	}
+
+	// Set passthru headers from context
+	if passthruHeaders := GetPassthruHeaders(ctx); passthruHeaders != nil {
+		for key, value := range passthruHeaders {
+			httpReq.Header.Set(key, value)
+		}
 	}
 
 	startTime := time.Now()
