@@ -1,6 +1,8 @@
 package schema
 
 import (
+	"strconv"
+
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
@@ -100,7 +102,7 @@ func (s *Schema) createBaseSchemaFromAST(astType *ast.Type, description string, 
 
 	// Add default value if available
 	if defaultValue != nil {
-		schema["default"] = defaultValue.Raw
+		schema["default"] = convertDefaultValue(defaultValue, astType)
 	}
 
 	return schema
@@ -197,7 +199,7 @@ func (s *Schema) createBaseSchemaFromTypeRef(typeRef *TypeRef, description, defa
 
 	// Add default value if available
 	if defaultValue != "" {
-		schema["default"] = defaultValue
+		schema["default"] = convertDefaultValueFromString(defaultValue, typeRef)
 	}
 
 	return schema
@@ -234,4 +236,91 @@ func (s *Schema) CreateInputSchema(field *Field) map[string]interface{} {
 	}
 
 	return schema
+}
+
+// convertDefaultValue converts a GraphQL default value to the appropriate JSON type
+func convertDefaultValue(defaultValue *ast.Value, astType *ast.Type) interface{} {
+	if defaultValue == nil {
+		return nil
+	}
+
+	// Get the base type name
+	baseType := GetASTTypeName(astType)
+
+	// Convert based on the GraphQL type
+	switch baseType {
+	case "Boolean":
+		if defaultValue.Raw == "true" {
+			return true
+		} else if defaultValue.Raw == "false" {
+			return false
+		}
+		// Fallback to string if not a valid boolean
+		return defaultValue.Raw
+	case "Int":
+		if intVal, err := strconv.Atoi(defaultValue.Raw); err == nil {
+			return intVal
+		}
+		// Fallback to string if not a valid int
+		return defaultValue.Raw
+	case "Float":
+		if floatVal, err := strconv.ParseFloat(defaultValue.Raw, 64); err == nil {
+			return floatVal
+		}
+		// Fallback to string if not a valid float
+		return defaultValue.Raw
+	case "String", "ID":
+		// Remove quotes if present
+		raw := defaultValue.Raw
+		if len(raw) >= 2 && raw[0] == '"' && raw[len(raw)-1] == '"' {
+			return raw[1 : len(raw)-1]
+		}
+		return raw
+	default:
+		// For other types (enums, objects, etc.), return as string
+		return defaultValue.Raw
+	}
+}
+
+// convertDefaultValueFromString converts a string default value to the appropriate JSON type based on TypeRef
+func convertDefaultValueFromString(defaultValue string, typeRef *TypeRef) interface{} {
+	if defaultValue == "" {
+		return nil
+	}
+
+	// Get the base type name
+	baseType := typeRef.GetTypeName()
+
+	// Convert based on the GraphQL type
+	switch baseType {
+	case "Boolean":
+		if defaultValue == "true" {
+			return true
+		} else if defaultValue == "false" {
+			return false
+		}
+		// Fallback to string if not a valid boolean
+		return defaultValue
+	case "Int":
+		if intVal, err := strconv.Atoi(defaultValue); err == nil {
+			return intVal
+		}
+		// Fallback to string if not a valid int
+		return defaultValue
+	case "Float":
+		if floatVal, err := strconv.ParseFloat(defaultValue, 64); err == nil {
+			return floatVal
+		}
+		// Fallback to string if not a valid float
+		return defaultValue
+	case "String", "ID":
+		// Remove quotes if present
+		if len(defaultValue) >= 2 && defaultValue[0] == '"' && defaultValue[len(defaultValue)-1] == '"' {
+			return defaultValue[1 : len(defaultValue)-1]
+		}
+		return defaultValue
+	default:
+		// For other types (enums, objects, etc.), return as string
+		return defaultValue
+	}
 }

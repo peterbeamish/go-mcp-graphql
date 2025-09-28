@@ -50,6 +50,8 @@ type AddAssociateInput struct {
 	ReportsToID *string `json:"reportsToId,omitempty"`
 	// Date when the associate joined (ISO 8601 format)
 	JoinedAt string `json:"joinedAt"`
+	//  training required
+	TrainingRequired *bool `json:"trainingRequired,omitempty"`
 }
 
 // Input for adding a manager to a facility.
