@@ -188,6 +188,10 @@ query IntrospectionQuery {
         }
         defaultValue
       }
+      enumValues {
+        name
+        description
+      }
     }
   }
 }

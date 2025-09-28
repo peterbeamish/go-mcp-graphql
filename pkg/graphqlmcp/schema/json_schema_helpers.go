@@ -22,6 +22,7 @@ func (s *Schema) CreateInputObjectSchema(typeName string) map[string]interface{}
 
 	// Process each field in the input object
 	for _, field := range typeDef.Fields {
+
 		fieldSchema := s.CreateInputFieldSchemaFromAST(field)
 		properties[field.Name] = fieldSchema
 
@@ -56,7 +57,7 @@ func (s *Schema) CreateInputFieldSchemaFromAST(field *ast.FieldDefinition) map[s
 // createBaseSchemaFromAST creates a base JSON schema from AST type with common logic
 func (s *Schema) createBaseSchemaFromAST(astType *ast.Type, description string, defaultValue *ast.Value) map[string]interface{} {
 	schema := map[string]interface{}{
-		"type": ASTTypeToJSONSchemaType(astType),
+		"type": ASTTypeToJSONSchemaTypeWithSchema(astType, s),
 	}
 
 	// Add description if available
@@ -73,10 +74,23 @@ func (s *Schema) createBaseSchemaFromAST(astType *ast.Type, description string, 
 		return schema
 	}
 
-	// Handle nested input object types
+	// Handle enum types
 	typeName := GetASTTypeName(astType)
 	if typeName != "" && !isBuiltinType(typeName) {
+		// Check if it's an enum type
+		if typeDef := s.GetTypeDefinition(typeName); typeDef != nil {
+			if typeDef.Kind == ast.Enum {
+				// Add enum values to the schema
+				enumValues := GetEnumValuesFromAST(astType, s)
+				if len(enumValues) > 0 {
+					schema["enum"] = enumValues
+				}
+			}
+		}
+
+		// Check for input object types
 		if inputObjectSchema := s.CreateInputObjectSchema(typeName); inputObjectSchema != nil {
+			// Handle nested input object types
 			// Merge the input object schema with the current schema
 			for key, value := range inputObjectSchema {
 				schema[key] = value
@@ -100,9 +114,23 @@ func (s *Schema) createItemSchemaFromAST(astType *ast.Type, defaultValue *ast.Va
 
 	// Handle the innermost type (scalar or named type)
 	if astType.NamedType != "" {
-		return map[string]interface{}{
-			"type": ASTTypeToJSONSchemaType(astType),
+		schema := map[string]interface{}{
+			"type": ASTTypeToJSONSchemaTypeWithSchema(astType, s),
 		}
+
+		// Handle enum types for list items
+		typeName := GetASTTypeName(astType)
+		if typeName != "" && !isBuiltinType(typeName) {
+			if typeDef := s.GetTypeDefinition(typeName); typeDef != nil && typeDef.Kind == "ENUM" {
+				// Add enum values to the schema
+				enumValues := GetEnumValuesFromAST(astType, s)
+				if len(enumValues) > 0 {
+					schema["enum"] = enumValues
+				}
+			}
+		}
+
+		return schema
 	}
 
 	// Handle wrapper types (NON_NULL)
@@ -126,7 +154,7 @@ func (s *Schema) CreateTypeRefSchema(typeRef *TypeRef, description string) map[s
 // createBaseSchemaFromTypeRef creates a base JSON schema from TypeRef with common logic
 func (s *Schema) createBaseSchemaFromTypeRef(typeRef *TypeRef, description, defaultValue string) map[string]interface{} {
 	schema := map[string]interface{}{
-		"type": typeRef.ToJSONSchemaType(),
+		"type": typeRef.ToJSONSchemaTypeWithSchema(s),
 	}
 
 	// Add description if available
@@ -142,9 +170,22 @@ func (s *Schema) createBaseSchemaFromTypeRef(typeRef *TypeRef, description, defa
 		return schema
 	}
 
-	// Handle input object types - but don't flatten them when creating argument schemas
+	// Handle enum types and input object types
 	if typeRef.GetTypeName() != "" && !isBuiltinType(typeRef.GetTypeName()) {
+		// Check if it's an enum type
+		if typeDef := s.GetTypeDefinition(typeRef.GetTypeName()); typeDef != nil {
+			if typeDef.Kind == ast.Enum {
+				// Add enum values to the schema
+				enumValues := GetEnumValuesFromTypeRef(typeRef, s)
+				if len(enumValues) > 0 {
+					schema["enum"] = enumValues
+				}
+			}
+		}
+
+		// Check for input object types
 		if inputObjectSchema := s.CreateInputObjectSchema(typeRef.GetTypeName()); inputObjectSchema != nil {
+			// Handle input object types - but don't flatten them when creating argument schemas
 			// For input object types, we want to reference the schema, not flatten it
 			// This preserves the proper nesting structure for arguments
 			schema["properties"] = inputObjectSchema["properties"]

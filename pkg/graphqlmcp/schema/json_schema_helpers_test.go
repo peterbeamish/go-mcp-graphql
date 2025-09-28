@@ -359,6 +359,253 @@ func TestSchema_createItemSchemaFromAST(t *testing.T) {
 	}
 }
 
+func TestSchema_CreateInputObjectSchema_EnumFields(t *testing.T) {
+	tests := []struct {
+		name     string
+		schema   *Schema
+		typeName string
+		expected map[string]interface{}
+	}{
+		{
+			name: "input object with enum field",
+			schema: &Schema{
+				typeRegistry: map[string]*ast.Definition{
+					"UserRole": {
+						Name: "UserRole",
+						Kind: ast.Enum,
+						EnumValues: []*ast.EnumValueDefinition{
+							{Name: "ADMIN"},
+							{Name: "USER"},
+							{Name: "GUEST"},
+						},
+					},
+					"CreateUserInput": {
+						Name: "CreateUserInput",
+						Kind: ast.InputObject,
+						Fields: []*ast.FieldDefinition{
+							{
+								Name:        "role",
+								Description: "User role",
+								Type:        ast.NonNullNamedType("UserRole", nil),
+							},
+						},
+					},
+				},
+			},
+			typeName: "CreateUserInput",
+			expected: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"role": map[string]interface{}{
+						"type":        "string",
+						"description": "User role",
+						"enum":        []interface{}{"ADMIN", "USER", "GUEST"},
+					},
+				},
+				"required": []interface{}{"role"},
+			},
+		},
+		{
+			name: "input object with optional enum field",
+			schema: &Schema{
+				typeRegistry: map[string]*ast.Definition{
+					"Status": {
+						Name: "Status",
+						Kind: ast.Enum,
+						EnumValues: []*ast.EnumValueDefinition{
+							{Name: "ACTIVE"},
+							{Name: "INACTIVE"},
+							{Name: "PENDING"},
+						},
+					},
+					"UpdateUserInput": {
+						Name: "UpdateUserInput",
+						Kind: ast.InputObject,
+						Fields: []*ast.FieldDefinition{
+							{
+								Name:        "status",
+								Description: "User status",
+								Type:        ast.NamedType("Status", nil),
+							},
+						},
+					},
+				},
+			},
+			typeName: "UpdateUserInput",
+			expected: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"status": map[string]interface{}{
+						"type":        "string",
+						"description": "User status",
+						"enum":        []interface{}{"ACTIVE", "INACTIVE", "PENDING"},
+					},
+				},
+			},
+		},
+		{
+			name: "input object with list of enums",
+			schema: &Schema{
+				typeRegistry: map[string]*ast.Definition{
+					"Priority": {
+						Name: "Priority",
+						Kind: ast.Enum,
+						EnumValues: []*ast.EnumValueDefinition{
+							{Name: "LOW"},
+							{Name: "MEDIUM"},
+							{Name: "HIGH"},
+							{Name: "CRITICAL"},
+						},
+					},
+					"CreateTaskInput": {
+						Name: "CreateTaskInput",
+						Kind: ast.InputObject,
+						Fields: []*ast.FieldDefinition{
+							{
+								Name:        "priorities",
+								Description: "Task priorities",
+								Type:        ast.ListType(ast.NonNullNamedType("Priority", nil), nil),
+							},
+						},
+					},
+				},
+			},
+			typeName: "CreateTaskInput",
+			expected: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"priorities": map[string]interface{}{
+						"type":        "array",
+						"description": "Task priorities",
+						"items": map[string]interface{}{
+							"type": "string",
+							"enum": []interface{}{"LOW", "MEDIUM", "HIGH", "CRITICAL"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.schema.CreateInputObjectSchema(tt.typeName)
+
+			// Check if the result has the expected structure
+			if result["type"] != "object" {
+				t.Errorf("Expected type to be 'object', got %v", result["type"])
+			}
+
+			properties, ok := result["properties"].(map[string]interface{})
+			if !ok {
+				t.Errorf("Expected properties to be a map")
+				return
+			}
+
+			// Check each property
+			for fieldName, expectedField := range tt.expected["properties"].(map[string]interface{}) {
+				actualField, exists := properties[fieldName]
+				if !exists {
+					t.Errorf("Expected field %s to exist", fieldName)
+					continue
+				}
+
+				actualFieldMap := actualField.(map[string]interface{})
+				expectedFieldMap := expectedField.(map[string]interface{})
+
+				// Check type
+				if actualFieldMap["type"] != expectedFieldMap["type"] {
+					t.Errorf("Field %s: expected type %v, got %v", fieldName, expectedFieldMap["type"], actualFieldMap["type"])
+				}
+
+				// Check description
+				if actualFieldMap["description"] != expectedFieldMap["description"] {
+					t.Errorf("Field %s: expected description %v, got %v", fieldName, expectedFieldMap["description"], actualFieldMap["description"])
+				}
+
+				// Check enum values
+				if expectedEnum, hasEnum := expectedFieldMap["enum"]; hasEnum {
+					actualEnum, hasActualEnum := actualFieldMap["enum"]
+					if !hasActualEnum {
+						t.Errorf("Field %s: expected enum values but none found", fieldName)
+					} else {
+						// Convert to string slices for comparison
+						actualEnumSlice := actualEnum.([]string)
+						expectedEnumSlice := make([]string, len(expectedEnum.([]interface{})))
+						for i, v := range expectedEnum.([]interface{}) {
+							expectedEnumSlice[i] = v.(string)
+						}
+
+						// Check if slices have same length and contain same values
+						if len(actualEnumSlice) != len(expectedEnumSlice) {
+							t.Errorf("Field %s: expected %d enum values, got %d", fieldName, len(expectedEnumSlice), len(actualEnumSlice))
+						} else {
+							// Create maps for comparison
+							actualMap := make(map[string]bool)
+							expectedMap := make(map[string]bool)
+							for _, v := range actualEnumSlice {
+								actualMap[v] = true
+							}
+							for _, v := range expectedEnumSlice {
+								expectedMap[v] = true
+							}
+
+							for v := range expectedMap {
+								if !actualMap[v] {
+									t.Errorf("Field %s: expected enum value %s not found", fieldName, v)
+								}
+							}
+							for v := range actualMap {
+								if !expectedMap[v] {
+									t.Errorf("Field %s: unexpected enum value %s found", fieldName, v)
+								}
+							}
+						}
+					}
+				}
+			}
+
+			// Check required fields
+			if expectedRequired, hasRequired := tt.expected["required"]; hasRequired {
+				actualRequired, hasActualRequired := result["required"]
+				if !hasActualRequired {
+					t.Errorf("Expected required fields but none found")
+				} else {
+					actualRequiredSlice := actualRequired.([]string)
+					expectedRequiredSlice := make([]string, len(expectedRequired.([]interface{})))
+					for i, v := range expectedRequired.([]interface{}) {
+						expectedRequiredSlice[i] = v.(string)
+					}
+
+					if len(actualRequiredSlice) != len(expectedRequiredSlice) {
+						t.Errorf("Expected %d required fields, got %d", len(expectedRequiredSlice), len(actualRequiredSlice))
+					} else {
+						actualMap := make(map[string]bool)
+						expectedMap := make(map[string]bool)
+						for _, v := range actualRequiredSlice {
+							actualMap[v] = true
+						}
+						for _, v := range expectedRequiredSlice {
+							expectedMap[v] = true
+						}
+
+						for v := range expectedMap {
+							if !actualMap[v] {
+								t.Errorf("Expected required field %s not found", v)
+							}
+						}
+						for v := range actualMap {
+							if !expectedMap[v] {
+								t.Errorf("Unexpected required field %s found", v)
+							}
+						}
+					}
+				}
+			}
+		})
+	}
+}
+
 // Helper function to compare maps recursively (reused from existing test)
 func mapsEqual(a, b interface{}) bool {
 	switch aVal := a.(type) {
