@@ -2,13 +2,48 @@
 
 A Go library that introspects a GraphQL server and automatically generates MCP (Model Context Protocol) tools, allowing the MCP server to be hosted via HTTP.
 
+## What is this?
+
+This library bridges GraphQL APIs with AI chat sessions by creating an MCP (Model Context Protocol) server that exposes GraphQL operations as tools that AI assistants can use.
+
+### The MCP Server
+The **MCP Server** acts as a bridge between AI chat sessions and your GraphQL API. It:
+- Connects to any GraphQL server (like GitHub's API, your company's API, etc.)
+- Automatically discovers all available queries and mutations through introspection
+- Converts each GraphQL operation into an MCP "tool" that AI assistants can call
+- Runs as an HTTP server that AI clients can connect to
+- Handles authentication, parameter validation, and response formatting
+
+### The MCP Client
+The **MCP Client** is what AI assistants use to interact with your GraphQL API. It:
+- Connects to the MCP server via HTTP
+- Lists all available GraphQL operations as tools
+- Calls specific tools (GraphQL queries/mutations) with parameters
+- Receives structured responses that the AI can understand and work with
+
+**When is the MCP Client used?**
+The MCP Client is used by AI assistants (like Claude, ChatGPT, or other MCP-compatible tools) when they need to:
+- **Query data**: "Show me all users", "Get the latest posts", "Find products by category"
+- **Create resources**: "Create a new user", "Add a blog post", "Update a record"
+- **Modify data**: "Update user profile", "Delete old records", "Change settings"
+- **Analyze information**: "Summarize user activity", "Generate reports", "Find patterns"
+
+The AI assistant automatically determines which GraphQL operations to call based on the user's natural language request, then uses the MCP Client to execute those operations against your GraphQL API.
+
+### How it works in practice
+1. **You** run the MCP server pointing to your GraphQL API
+2. **AI assistants** (like Claude, ChatGPT, etc.) connect to your MCP server
+3. **Users** can ask the AI to "get all users" or "create a new post" 
+4. **The AI** automatically calls the right GraphQL operations through the MCP tools
+5. **Your GraphQL API** receives the requests and returns data
+6. **The AI** presents the results to the user in a conversational way
+
 ## Features
 
 - **GraphQL Introspection**: Automatically introspects any GraphQL server to understand its schema
 - **MCP Tool Generation**: Converts GraphQL queries and mutations into MCP tools
 - **HTTP Server**: Hosts the MCP server over HTTP for easy integration
 - **Type Safety**: Leverages Go's type system for safe GraphQL operations
-- **Flexible Transport**: Supports stdio, HTTP, and custom transport implementations
 
 ## Installation
 
@@ -43,31 +78,6 @@ func main() {
     // Start HTTP server
     log.Println("Starting MCP GraphQL server on :8080")
     log.Fatal(http.ListenAndServe(":8080", mux))
-}
-```
-
-### Stdio Server Example
-
-```go
-package main
-
-import (
-    "context"
-    "log"
-    
-    "github.com/peterbeamish/go-mcp-graphql/pkg/graphqlmcp"
-)
-
-func main() {
-    // Create a GraphQL MCP server
-    server, err := graphqlmcp.NewMCPGraphQLServer("https://countries.trevorblades.com/graphql")
-    if err != nil {
-        log.Fatal(err)
-    }
-    
-    // Run over stdio
-    ctx := context.Background()
-    log.Fatal(server.GetMCPServer().Run(ctx, &graphqlmcp.StdioTransport{}))
 }
 ```
 
