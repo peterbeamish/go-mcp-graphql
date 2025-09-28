@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/vektah/gqlparser/v2/ast"
@@ -8,6 +9,30 @@ import (
 
 // CreateInputObjectSchema creates a detailed JSON schema for an input object type
 func (s *Schema) CreateInputObjectSchema(typeName string) map[string]interface{} {
+	return s.createInputObjectSchemaWithDepth(typeName, make(map[string]bool), 0)
+}
+
+// createInputObjectSchemaWithDepth creates a JSON schema with recursion depth tracking
+func (s *Schema) createInputObjectSchemaWithDepth(typeName string, visited map[string]bool, depth int) map[string]interface{} {
+	// Check recursion depth to prevent stack overflow
+	const maxDepth = 10
+	if depth > maxDepth {
+		return map[string]interface{}{
+			"type":        "object",
+			"description": fmt.Sprintf("Recursive type %s (max depth %d exceeded)", typeName, maxDepth),
+			"properties":  map[string]interface{}{},
+		}
+	}
+
+	// Check for circular references
+	if visited[typeName] {
+		return map[string]interface{}{
+			"type":        "object",
+			"description": fmt.Sprintf("Circular reference to %s", typeName),
+			"properties":  map[string]interface{}{},
+		}
+	}
+
 	// Get the type definition from the schema
 	typeDef := s.GetTypeDefinition(typeName)
 	if typeDef == nil {
@@ -19,13 +44,16 @@ func (s *Schema) CreateInputObjectSchema(typeName string) map[string]interface{}
 		return nil
 	}
 
+	// Mark this type as visited
+	visited[typeName] = true
+	defer delete(visited, typeName) // Clean up when done
+
 	properties := make(map[string]interface{})
 	required := []string{}
 
 	// Process each field in the input object
 	for _, field := range typeDef.Fields {
-
-		fieldSchema := s.CreateInputFieldSchemaFromAST(field)
+		fieldSchema := s.createInputFieldSchemaFromASTWithDepth(field, visited, depth+1)
 		properties[field.Name] = fieldSchema
 
 		// Add to required if it's non-null and has no default value
@@ -56,8 +84,18 @@ func (s *Schema) CreateInputFieldSchemaFromAST(field *ast.FieldDefinition) map[s
 	return s.createBaseSchemaFromAST(field.Type, field.Description, field.DefaultValue)
 }
 
+// createInputFieldSchemaFromASTWithDepth creates a JSON schema for an input field with depth tracking
+func (s *Schema) createInputFieldSchemaFromASTWithDepth(field *ast.FieldDefinition, visited map[string]bool, depth int) map[string]interface{} {
+	return s.createBaseSchemaFromASTWithDepth(field.Type, field.Description, field.DefaultValue, visited, depth)
+}
+
 // createBaseSchemaFromAST creates a base JSON schema from AST type with common logic
 func (s *Schema) createBaseSchemaFromAST(astType *ast.Type, description string, defaultValue *ast.Value) map[string]interface{} {
+	return s.createBaseSchemaFromASTWithDepth(astType, description, defaultValue, make(map[string]bool), 0)
+}
+
+// createBaseSchemaFromASTWithDepth creates a base JSON schema with depth tracking
+func (s *Schema) createBaseSchemaFromASTWithDepth(astType *ast.Type, description string, defaultValue *ast.Value, visited map[string]bool, depth int) map[string]interface{} {
 	schema := map[string]interface{}{
 		"type": ASTTypeToJSONSchemaTypeWithSchema(astType, s),
 	}
@@ -71,7 +109,7 @@ func (s *Schema) createBaseSchemaFromAST(astType *ast.Type, description string, 
 	if IsASTTypeList(astType) {
 		schema["type"] = "array"
 		// For list items, use a different function that doesn't add array wrappers
-		itemSchema := s.createItemSchemaFromAST(astType.Elem, defaultValue)
+		itemSchema := s.createItemSchemaFromASTWithDepth(astType.Elem, defaultValue, visited, depth+1)
 		schema["items"] = itemSchema
 		return schema
 	}
@@ -91,7 +129,7 @@ func (s *Schema) createBaseSchemaFromAST(astType *ast.Type, description string, 
 		}
 
 		// Check for input object types
-		if inputObjectSchema := s.CreateInputObjectSchema(typeName); inputObjectSchema != nil {
+		if inputObjectSchema := s.createInputObjectSchemaWithDepth(typeName, visited, depth+1); inputObjectSchema != nil {
 			// Handle nested input object types
 			// Merge the input object schema with the current schema
 			for key, value := range inputObjectSchema {
@@ -110,6 +148,11 @@ func (s *Schema) createBaseSchemaFromAST(astType *ast.Type, description string, 
 
 // createItemSchemaFromAST creates a JSON schema for list items without adding array wrappers
 func (s *Schema) createItemSchemaFromAST(astType *ast.Type, defaultValue *ast.Value) map[string]interface{} {
+	return s.createItemSchemaFromASTWithDepth(astType, defaultValue, make(map[string]bool), 0)
+}
+
+// createItemSchemaFromASTWithDepth creates a JSON schema for list items with depth tracking
+func (s *Schema) createItemSchemaFromASTWithDepth(astType *ast.Type, defaultValue *ast.Value, visited map[string]bool, depth int) map[string]interface{} {
 	if astType == nil {
 		return map[string]interface{}{"type": "string"}
 	}
@@ -137,12 +180,12 @@ func (s *Schema) createItemSchemaFromAST(astType *ast.Type, defaultValue *ast.Va
 
 	// Handle wrapper types (NON_NULL)
 	if astType.NonNull {
-		return s.createItemSchemaFromAST(astType.Elem, defaultValue)
+		return s.createItemSchemaFromASTWithDepth(astType.Elem, defaultValue, visited, depth+1)
 	}
 
 	// Handle LIST types - this shouldn't happen in normal cases, but handle it
 	if astType.Elem != nil {
-		return s.createItemSchemaFromAST(astType.Elem, defaultValue)
+		return s.createItemSchemaFromASTWithDepth(astType.Elem, defaultValue, visited, depth+1)
 	}
 
 	return map[string]interface{}{"type": "string"}
