@@ -20,6 +20,7 @@ type MCPGraphQLServer struct {
 	mcpServer *mcp.Server
 	logger    logr.Logger
 	options   *MCPGraphQLServerOptions
+	testMode  bool
 }
 
 // NewMCPGraphQLServer creates a new MCP GraphQL server

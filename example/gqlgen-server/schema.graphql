@@ -156,6 +156,13 @@ type Mutation {
   Removes the specified personnel from the facility.
   """
   removePersonnelFromFacility(facilityId: ID!, personnelId: ID!): Boolean!
+
+
+  """
+  Add an organization chain to a facility.
+  Creates a new organization chain and assigns it to the specified facility.
+  """
+  addOrgChainToFacility(facilityId: ID!, input: AddOrgChainInput!): [Personnel!]!
 }
 
 """
@@ -1419,4 +1426,10 @@ input AddAssociateInput {
 
   """ training required """
   trainingRequired: Boolean = true
+}
+
+input AddOrgChainInput {
+  manager: [AddManagerInput]
+  associate: [AddAssociateInput]
+  nextLevel: AddOrgChainInput
 }

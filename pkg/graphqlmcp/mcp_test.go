@@ -202,7 +202,6 @@ func TestMCPGraphQLServer_MutationToolExecution(t *testing.T) {
 	server, err := NewMCPGraphQLServerWithExecutor(mockExecutor)
 	assert.NoError(t, err)
 	assert.NotNil(t, server)
-
 	// Test each mutation tool
 	mutations := testSchema.GetMutations()
 	for _, mutation := range mutations {
