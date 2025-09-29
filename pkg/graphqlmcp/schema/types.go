@@ -13,6 +13,9 @@ type Schema struct {
 	// Parsed schema for dynamic introspection using gqlparser
 	parsedSchema *ast.Schema
 	typeRegistry map[string]*ast.Definition
+
+	// MaxDepth controls the maximum depth for query generation
+	MaxDepth int `json:"maxDepth"`
 }
 
 // Type represents a GraphQL type

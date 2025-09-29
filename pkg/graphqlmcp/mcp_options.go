@@ -11,6 +11,7 @@ type MCPGraphQLServerOptions struct {
 	Logger          logr.Logger
 	Mask            *MaskConfig
 	PassthruHeaders []string
+	MaxDepth        int // Maximum depth for query generation
 }
 
 // MaskConfig defines how to filter queries and mutations
@@ -97,11 +98,19 @@ func WithPassthruHeaders(headers []string) MCPGraphQLServerOption {
 	}
 }
 
+// WithMaxDepth configures the maximum depth for query generation
+func WithMaxDepth(maxDepth int) MCPGraphQLServerOption {
+	return func(opts *MCPGraphQLServerOptions) {
+		opts.MaxDepth = maxDepth
+	}
+}
+
 // NewMCPGraphQLServerOptions creates a new options struct with default values
 func NewMCPGraphQLServerOptions() *MCPGraphQLServerOptions {
 	return &MCPGraphQLServerOptions{
 		Logger:          logr.Discard(), // Will use default logger if not set
 		Mask:            nil,            // No masking by default
 		PassthruHeaders: nil,            // No passthru headers by default
+		MaxDepth:        5,              // Default max depth
 	}
 }

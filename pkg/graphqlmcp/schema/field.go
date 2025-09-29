@@ -233,8 +233,9 @@ func (f *Field) getReturnTypeNameFromAST() string {
 
 // generateSelectionSetForTypeWithVisited generates a selection set with circular reference protection
 func (f *Field) generateSelectionSetForTypeWithVisited(typeDef *ast.Definition, schema *Schema, depth int, visited map[string]bool, originalType string) (string, error) {
-	if depth > 5 { // Reduced depth limit
-		return "", fmt.Errorf("depth is greater than 5")
+	maxDepth := schema.GetMaxDepth()
+	if depth > maxDepth {
+		return "", fmt.Errorf("depth is greater than %d", maxDepth)
 	}
 
 	// Check for circular references
