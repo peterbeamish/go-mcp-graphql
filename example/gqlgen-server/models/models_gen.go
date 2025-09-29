@@ -591,6 +591,8 @@ type PerformanceAlert struct {
 	AcknowledgedAt *string `json:"acknowledgedAt,omitempty"`
 	// Person who acknowledged the alert
 	AcknowledgedBy *string `json:"acknowledgedBy,omitempty"`
+	// Test field
+	Test int `json:"test"`
 }
 
 func (PerformanceAlert) IsEquipmentNotification() {}
@@ -657,6 +659,8 @@ type StatusUpdate struct {
 	ChangedBy *string `json:"changedBy,omitempty"`
 	// Additional notes about the status change
 	Notes *string `json:"notes,omitempty"`
+	// Test field
+	Test string `json:"test"`
 }
 
 func (StatusUpdate) IsEquipmentNotification() {}

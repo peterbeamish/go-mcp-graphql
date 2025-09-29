@@ -300,7 +300,7 @@ func (f *Field) generateSelectionSetForTypeWithVisited(typeDef *ast.Definition, 
 				// Create inline fragment for this possible type
 				if possibleTypeFields != "" {
 					// Add field aliases to prevent conflicts between union member types
-					aliasedFields := f.addFieldAliases(possibleTypeFields, possibleType)
+					aliasedFields := f.addFieldAliasesForUnion(possibleTypeFields, possibleType, typeDef, schema)
 					fragment := fmt.Sprintf("... on %s {\n      %s\n    }", possibleType, strings.ReplaceAll(aliasedFields, "\n    ", "\n      "))
 					fields = append(fields, fragment)
 				} else {
@@ -439,7 +439,61 @@ func (f *Field) shouldIncludeFieldInInterface(field *ast.FieldDefinition) bool {
 	return true
 }
 
+// addFieldAliasesForUnion adds aliases to fields that actually conflict between union member types
+func (f *Field) addFieldAliasesForUnion(fields string, typeName string, unionDef *ast.Definition, schema *Schema) string {
+	// Find all fields that exist in multiple union member types
+	conflictFields := f.findConflictingFieldsInUnion(unionDef, schema)
+
+	lines := strings.Split(fields, "\n")
+	var result []string
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			result = append(result, line)
+			continue
+		}
+
+		// Check if this line contains a field that conflicts with other union member types
+		fieldName := f.extractFieldName(trimmed)
+		if conflictFields[fieldName] {
+			// Add alias with type prefix
+			aliasedLine := strings.Replace(trimmed, fieldName, fmt.Sprintf("%s_%s: %s", typeName, fieldName, fieldName), 1)
+			result = append(result, aliasedLine)
+		} else {
+			result = append(result, line)
+		}
+	}
+
+	return strings.Join(result, "\n")
+}
+
+// findConflictingFieldsInUnion identifies fields that exist in multiple union member types
+func (f *Field) findConflictingFieldsInUnion(unionDef *ast.Definition, schema *Schema) map[string]bool {
+	fieldCounts := make(map[string]int)
+
+	// Count how many union member types have each field
+	for _, possibleType := range unionDef.Types {
+		if typeDef := schema.GetTypeDefinition(possibleType); typeDef != nil {
+			for _, field := range typeDef.Fields {
+				fieldCounts[field.Name]++
+			}
+		}
+	}
+
+	// Fields that appear in more than one union member type are conflicting
+	conflictFields := make(map[string]bool)
+	for fieldName, count := range fieldCounts {
+		if count > 1 {
+			conflictFields[fieldName] = true
+		}
+	}
+
+	return conflictFields
+}
+
 // addFieldAliases adds aliases to fields that might conflict between union member types
+// This is the legacy method kept for backward compatibility
 func (f *Field) addFieldAliases(fields string, typeName string) string {
 	// Common fields that often conflict between union member types
 	conflictFields := map[string]bool{

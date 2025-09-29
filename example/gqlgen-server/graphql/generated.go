@@ -240,6 +240,7 @@ type ComplexityRoot struct {
 		ID             func(childComplexity int) int
 		MetricType     func(childComplexity int) int
 		Severity       func(childComplexity int) int
+		Test           func(childComplexity int) int
 		Threshold      func(childComplexity int) int
 	}
 
@@ -265,6 +266,7 @@ type ComplexityRoot struct {
 		NewStatus      func(childComplexity int) int
 		Notes          func(childComplexity int) int
 		PreviousStatus func(childComplexity int) int
+		Test           func(childComplexity int) int
 	}
 
 	TemperatureRange struct {
@@ -1300,6 +1302,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.PerformanceAlert.Severity(childComplexity), true
+	case "PerformanceAlert.test":
+		if e.complexity.PerformanceAlert.Test == nil {
+			break
+		}
+
+		return e.complexity.PerformanceAlert.Test(childComplexity), true
 	case "PerformanceAlert.threshold":
 		if e.complexity.PerformanceAlert.Threshold == nil {
 			break
@@ -1436,6 +1444,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.StatusUpdate.PreviousStatus(childComplexity), true
+	case "StatusUpdate.test":
+		if e.complexity.StatusUpdate.Test == nil {
+			break
+		}
+
+		return e.complexity.StatusUpdate.Test(childComplexity), true
 
 	case "TemperatureRange.max":
 		if e.complexity.TemperatureRange.Max == nil {
@@ -2261,6 +2275,9 @@ type StatusUpdate {
   
   """Additional notes about the status change"""
   notes: String
+
+  """Test field"""
+  test: String!
 }
 
 """
@@ -2303,6 +2320,9 @@ type PerformanceAlert {
   
   """Person who acknowledged the alert"""
   acknowledgedBy: String
+
+  """Test field"""
+  test: Int!
 }
 
 # Enums
@@ -8549,6 +8569,35 @@ func (ec *executionContext) fieldContext_PerformanceAlert_acknowledgedBy(_ conte
 	return fc, nil
 }
 
+func (ec *executionContext) _PerformanceAlert_test(ctx context.Context, field graphql.CollectedField, obj *models.PerformanceAlert) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PerformanceAlert_test,
+		func(ctx context.Context) (any, error) {
+			return obj.Test, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PerformanceAlert_test(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformanceAlert",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_equipment(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -9475,6 +9524,35 @@ func (ec *executionContext) _StatusUpdate_notes(ctx context.Context, field graph
 }
 
 func (ec *executionContext) fieldContext_StatusUpdate_notes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StatusUpdate",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StatusUpdate_test(ctx context.Context, field graphql.CollectedField, obj *models.StatusUpdate) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StatusUpdate_test,
+		func(ctx context.Context) (any, error) {
+			return obj.Test, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_StatusUpdate_test(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "StatusUpdate",
 		Field:      field,
@@ -13343,6 +13421,11 @@ func (ec *executionContext) _PerformanceAlert(ctx context.Context, sel ast.Selec
 			out.Values[i] = ec._PerformanceAlert_acknowledgedAt(ctx, field, obj)
 		case "acknowledgedBy":
 			out.Values[i] = ec._PerformanceAlert_acknowledgedBy(ctx, field, obj)
+		case "test":
+			out.Values[i] = ec._PerformanceAlert_test(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -13672,6 +13755,11 @@ func (ec *executionContext) _StatusUpdate(ctx context.Context, sel ast.Selection
 			out.Values[i] = ec._StatusUpdate_changedBy(ctx, field, obj)
 		case "notes":
 			out.Values[i] = ec._StatusUpdate_notes(ctx, field, obj)
+		case "test":
+			out.Values[i] = ec._StatusUpdate_test(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

@@ -687,6 +687,9 @@ type StatusUpdate {
   
   """Additional notes about the status change"""
   notes: String
+
+  """Test field"""
+  test: String!
 }
 
 """
@@ -729,6 +732,9 @@ type PerformanceAlert {
   
   """Person who acknowledged the alert"""
   acknowledgedBy: String
+
+  """Test field"""
+  test: Int!
 }
 
 # Enums
