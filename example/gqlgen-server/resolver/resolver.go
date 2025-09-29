@@ -1,6 +1,7 @@
 package resolver
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/peterbeamish/go-mcp-graphql/example/gqlgen-server/models"
@@ -458,4 +459,102 @@ func (r *Resolver) GetEquipmentNotifications() []models.EquipmentNotification {
 	}
 
 	return notifications
+}
+
+// processOrgChain recursively processes the organization chain input
+func (r *Resolver) processOrgChain(facility *models.Facility, input models.AddOrgChainInput, parentManager *models.Manager) ([]models.Personnel, error) {
+	var createdPersonnel []models.Personnel
+
+	// Process managers at this level
+	for _, managerInput := range input.Manager {
+		manager, err := r.createManager(facility, *managerInput)
+		if err != nil {
+			return nil, err
+		}
+		createdPersonnel = append(createdPersonnel, manager)
+	}
+
+	// Process associates at this level
+	for _, associateInput := range input.Associate {
+		associate, err := r.createAssociate(facility, *associateInput, parentManager)
+		if err != nil {
+			return nil, err
+		}
+		createdPersonnel = append(createdPersonnel, associate)
+	}
+
+	// Process next level recursively
+	if input.NextLevel != nil {
+		// Find the most recently created manager to be the parent for the next level
+		var nextLevelParent *models.Manager
+		for i := len(createdPersonnel) - 1; i >= 0; i-- {
+			if manager, ok := createdPersonnel[i].(*models.Manager); ok {
+				nextLevelParent = manager
+				break
+			}
+		}
+
+		nextLevelPersonnel, err := r.processOrgChain(facility, *input.NextLevel, nextLevelParent)
+		if err != nil {
+			return nil, err
+		}
+		createdPersonnel = append(createdPersonnel, nextLevelPersonnel...)
+	}
+
+	return createdPersonnel, nil
+}
+
+// createManager creates a new manager and adds it to the facility
+func (r *Resolver) createManager(facility *models.Facility, input models.AddManagerInput) (*models.Manager, error) {
+	managerID := fmt.Sprintf("manager-%d", len(r.managers)+1)
+	manager := &models.Manager{
+		ID:            managerID,
+		Name:          input.Name,
+		Email:         input.Email,
+		Phone:         input.Phone,
+		JoinedAt:      input.JoinedAt,
+		Status:        models.PersonnelStatusActive,
+		Department:    input.Department,
+		DirectReports: 0,
+		Level:         input.Level,
+	}
+
+	// Add to resolver
+	r.managers = append(r.managers, manager)
+	r.personnel = append(r.personnel, manager)
+
+	// Add to facility personnel
+	facility.Personnel = append(facility.Personnel, manager)
+
+	return manager, nil
+}
+
+// createAssociate creates a new associate and adds it to the facility
+func (r *Resolver) createAssociate(facility *models.Facility, input models.AddAssociateInput, reportsTo *models.Manager) (*models.Associate, error) {
+	associateID := fmt.Sprintf("associate-%d", len(r.associates)+1)
+	associate := &models.Associate{
+		ID:         associateID,
+		Name:       input.Name,
+		Email:      input.Email,
+		Phone:      input.Phone,
+		JoinedAt:   input.JoinedAt,
+		Status:     models.PersonnelStatusActive,
+		JobTitle:   input.JobTitle,
+		Department: input.Department,
+		ReportsTo:  reportsTo,
+	}
+
+	// Add to resolver
+	r.associates = append(r.associates, associate)
+	r.personnel = append(r.personnel, associate)
+
+	// Add to facility personnel
+	facility.Personnel = append(facility.Personnel, associate)
+
+	// Update manager's direct reports count if reportsTo is specified
+	if reportsTo != nil {
+		reportsTo.DirectReports++
+	}
+
+	return associate, nil
 }
