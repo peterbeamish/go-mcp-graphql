@@ -180,3 +180,11 @@ func (s *Schema) GetUnionByName(unionName string) *Type {
 
 	return convertASTToType(typeDef)
 }
+
+// GetMaxDepth returns the maximum depth for query generation
+func (s *Schema) GetMaxDepth() int {
+	if s.MaxDepth <= 0 {
+		return 5 // Default value if not set
+	}
+	return s.MaxDepth
+}

@@ -51,7 +51,10 @@ func NewMCPGraphQLServerWithExecutor(executor GraphQLExecutor, opts ...MCPGraphQ
 		logger.Info("Failed to introspect GraphQL schema, continuing with empty schema", "error", err)
 	}
 
-	// Schema is already parsed from introspection, no need to re-parse from SDL
+	// Apply max depth configuration to schema if it was introspected successfully
+	if schema != nil {
+		schema.MaxDepth = options.MaxDepth
+	}
 
 	// Create MCP server
 	mcpServer := mcp.NewServer(&mcp.Implementation{
@@ -333,6 +336,11 @@ func (s *MCPGraphQLServer) RefreshSchema() error {
 	schema, err := s.executor.IntrospectSchema(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to refresh GraphQL schema: %w", err)
+	}
+
+	// Apply max depth configuration to the refreshed schema
+	if schema != nil {
+		schema.MaxDepth = s.options.MaxDepth
 	}
 
 	s.Schema = schema

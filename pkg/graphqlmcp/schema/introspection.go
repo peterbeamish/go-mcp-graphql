@@ -52,6 +52,7 @@ func ParseIntrospectionResponse(data map[string]interface{}) (*Schema, error) {
 	schema := &Schema{
 		parsedSchema: astSchema,
 		typeRegistry: astSchema.Types,
+		MaxDepth:     5, // Default max depth
 	}
 
 	// Convert to legacy types for backward compatibility
